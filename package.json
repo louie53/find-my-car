@@ -1,0 +1,27 @@
+{
+  "name": "find-my-car",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.ts",
+  "engines": { "node": ">=22.13.0 <25" },
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "tsx --test tests/*.test.ts",
+    "check": "npm run typecheck && npm run lint && npm test",
+    "export:android": "expo export --platform android",
+    "build:preview": "eas build --platform android --profile preview"
+  },
+  "dependencies": {
+    "expo": "~57.0.26",
+    "expo-status-bar": "~57.0.1",
+    "react": "19.2.3",
+    "react-native": "0.86.3"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "typescript": "~6.0.3"
+  }
+}

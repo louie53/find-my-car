@@ -1,0 +1,17 @@
+node_modules/
+.git/
+.expo/
+dist/
+android/
+ios/
+artifacts/
+coverage/
+.env*
+*.apk
+*.aab
+*.jks
+*.keystore
+credentials.json
+parking-photos/
+device-data/
+.DS_Store
