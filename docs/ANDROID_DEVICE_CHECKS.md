@@ -10,8 +10,8 @@ All entries below are **NOT TESTED** until evidence is recorded.
 | --- | --- |
 | Independent install | Install on Android 10 or newer. Stop Metro, disconnect the development computer and do not use Expo Go. First launch offline and cold-start again. The app opens without a development server. |
 | Fresh/normal startup | First installation is empty. Save text, force-stop and reopen; the same record appears. |
-| Real location | Allow foreground precision, save parking, move elsewhere, then open/edit the record. It keeps the saved parking position and timestamp. |
-| Location failures | Deny permission, disable services, allow approximate location and exercise timeout/retry. Fields remain editable; manual clues save. A late result does not replace saved data. |
+| Real location | Allow foreground precision. A successful request shows Location captured and Update location; use Save parking to commit it. Move elsewhere, then open/edit the record. It keeps the saved parking position and timestamp. Editing offers no replacement-location action. |
+| Location failures | Deny permission, disable services, allow approximate location and exercise timeout/retry. Failure shows Location unavailable and Try again. If a retry fails after a coordinate was captured, Previous location kept explains that the draft coordinate remains. Fields stay editable; manual clues save. A late result does not replace saved data. |
 | Real camera | Deny, cancel, photograph a harmless sign, retake, remove and enlarge. Check portrait/landscape photos are readable. |
 | Photo persistence | Save a real photo, force-stop, reopen and enlarge. It still loads from app storage. |
 | Edit/cancel | Change text and photo, then discard. Original text, photo, coordinates and parking time remain. Confirm an edit and check only the intended clues change. |

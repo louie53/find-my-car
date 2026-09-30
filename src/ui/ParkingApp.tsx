@@ -42,11 +42,17 @@ function Photo({ uri, enlarge }: { uri: string; enlarge: () => void }) {
 function LocationPanel({ view, controller }: { view: ViewState; controller: ParkingController }) {
   const location = view.draft?.location;
   const preserved = view.draft?.mode === 'edit';
+  const unavailable = view.locationStatus === 'unavailable';
   const title = preserved ? location ? 'Saved parking location' : 'No location saved'
     : view.locationStatus === 'loading' ? 'Getting location'
-    : location ? 'Approximate location' : 'Location unavailable';
+    : location ? unavailable ? 'Previous location kept' : 'Location captured'
+    : unavailable ? 'Location unavailable' : 'Location not captured';
   const copy = preserved ? 'Editing keeps your original parking position.'
+    : view.locationStatus === 'loading' ? view.locationMessage
+    : location && unavailable ? 'The last location in this draft is kept. ' + view.locationMessage
+    : location ? 'Tap Save parking to keep this approximate position.'
     : view.locationMessage || 'You can save parking clues without GPS.';
+  const requestLabel = unavailable ? 'Try again' : location ? 'Update location' : 'Get location';
   return <View style={styles.location}>
     <View style={styles.locationIcon}>{view.locationStatus === 'loading'
       ? <ActivityIndicator color={c.green} /> : <Text style={styles.approx}>≈</Text>}</View>
@@ -55,7 +61,7 @@ function LocationPanel({ view, controller }: { view: ViewState; controller: Park
       <Text style={styles.small}>{copy}</Text>
       {location?.accuracy != null ? <Text style={styles.small}>Reported accuracy: about {Math.round(location.accuracy)} m. This does not identify a level.</Text> : null}
       {!preserved && view.locationStatus !== 'loading' ? <View style={styles.inlineActions}>
-        <Button kind="link" label="Try again" disabled={view.busy} onPress={() => { void controller.requestLocation(); }} />
+        <Button kind="link" label={requestLabel} disabled={view.busy} onPress={() => { void controller.requestLocation(); }} />
         {view.locationStatus === 'unavailable' ? <Button kind="link" label="App settings" disabled={view.busy} onPress={() => { void controller.openSettings(); }} /> : null}
       </View> : null}
     </View>
