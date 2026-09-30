@@ -77,7 +77,7 @@ function Form({ draft, view, controller, enlarge, cancel }: FormProps) {
       Alert.alert('Replace saved parking?', 'Your current parking record will be replaced only after the new one saves successfully.', [
         { text: 'Keep editing', style: 'cancel' },
         { text: 'Replace', onPress: () => { void controller.save(replacement.id); } },
-      ]);
+      ], { cancelable: true });
     } else void controller.save();
   }
 
@@ -220,7 +220,7 @@ export function ParkingApp({ controller }: { controller: ParkingController }) {
     Alert.alert('Discard these changes?', 'Your previously saved parking record will be kept.', [
       { text: 'Keep editing', style: 'cancel' },
       { text: 'Discard', onPress: () => { void controller.cancel(); } },
-    ]);
+    ], { cancelable: true });
   };
 
   useEffect(() => {
@@ -231,7 +231,7 @@ export function ParkingApp({ controller }: { controller: ParkingController }) {
         Alert.alert('Discard these changes?', 'Your previously saved parking record will be kept.', [
           { text: 'Keep editing', style: 'cancel' },
           { text: 'Discard', onPress: () => { void controller.cancel(); } },
-        ]);
+        ], { cancelable: true });
         return true;
       }
       return false;

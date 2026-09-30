@@ -20,7 +20,7 @@ All entries below are **NOT TESTED** until evidence is recorded.
 | Activity destruction | Enable Don't keep activities temporarily. For both new and editing drafts, enter identifiable test text, open the camera and complete/cancel. Confirm the draft and returned photo recover once, and the original record is safe. Restore the setting afterwards. |
 | Offline | Disable mobile data/Wi-Fi, then save/read/edit text and photos, Found, Undo and restart. Local functions work. Do not assume GPS necessarily fails without internet. |
 | Maps | From a record with GPS, open Maps after moving away. It opens the saved destination. No GPS means no Maps button. App data remains intact if opening fails. |
-| Back/keyboard/layout | Check photo close, camera Back, edit/new discard, replacement cancel, keyboard scrolling, long clues, smaller display and maximum available font size. Save/Cancel/Undo/Found stay reachable. |
+| Back/keyboard/layout | For replacement, Cancel-triggered discard and hardware-Back-triggered discard confirmations, press Android Back while the dialog is open. Only the dialog closes; the current draft and original record/photo remain unchanged. Also check photo close, camera Back, keyboard scrolling, long clues, smaller display and maximum available font size. Save/Cancel/Undo/Found stay reachable. |
 | Permissions | Inspect the final APK merged manifest: no microphone/background-location/album/overlay permissions. Check normal camera/foreground-location prompts. |
 | Failure cases | Logic tests cover injected read/copy/write/cleanup errors. Device evidence is additional, not a substitute for those tests. |
 
