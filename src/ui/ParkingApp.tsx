@@ -7,16 +7,21 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { type ParkingController, type ViewState } from '../controller/ParkingController';
 import { findingSteps, type Draft, type ParkingRecord } from '../domain/parking';
 
-const c = { background: '#fbfcfa', ink: '#202a25', muted: '#627168', green: '#2f694f',
+const c = { background: '#fbfcfa', ink: '#202a25', muted: '#627168', green: '#2f694f', finish: '#11804b',
   panel: '#eef1ec', record: '#eef3ec', border: '#c7d0c8', pale: '#e7efe2', error: '#7c482c' };
 
-type ButtonProps = { label: string; onPress: () => void; disabled?: boolean; kind?: 'primary' | 'secondary' | 'link' };
-function Button({ label, onPress, disabled = false, kind = 'primary' }: ButtonProps) {
+type ButtonProps = { label: string; onPress: () => void; disabled?: boolean;
+  kind?: 'primary' | 'secondary' | 'link' | 'completion' | 'subtle'; icon?: 'check' | 'plus' | undefined };
+function Button({ label, onPress, disabled = false, kind = 'primary', icon }: ButtonProps) {
+  const filled = kind === 'primary' || kind === 'completion';
   return <Pressable accessibilityRole="button" accessibilityLabel={label}
     accessibilityState={{ disabled }} disabled={disabled} onPress={onPress}
-    style={({ pressed }) => [styles.button, kind === 'primary' ? styles.primary : kind === 'secondary' ? styles.secondary : styles.link,
-      disabled && styles.disabled, pressed && !disabled && styles.pressed]}>
-    <Text style={[styles.buttonText, kind === 'primary' ? styles.primaryText : styles.linkText]}>{label}</Text>
+    style={({ pressed }) => [styles.button, kind === 'primary' ? styles.primary : kind === 'completion' ? styles.completion
+      : kind === 'secondary' ? styles.secondary : styles.link,
+      pressed && !disabled && (kind === 'completion' ? styles.completionPressed : styles.pressed), disabled && styles.disabled]}>
+    {icon ? <Text accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
+      style={[styles.buttonIcon, filled ? styles.primaryText : kind === 'subtle' ? styles.subtleText : styles.linkText]}>{icon === 'check' ? '✓' : '+'}</Text> : null}
+    <Text style={[styles.buttonText, filled ? styles.primaryText : styles.linkText, kind === 'subtle' && styles.subtleText]}>{label}</Text>
   </Pressable>;
 }
 
@@ -174,9 +179,9 @@ function RecordView({ record, view, controller, enlarge }: { record: ParkingReco
       <View style={styles.photoSpacing}><Photo key={photoUri} uri={photoUri} enlarge={() => enlarge(photoUri)} /></View>
     </View> : null}
     {record.location ? <View style={styles.mapsRow}>
-      <View style={styles.flex}><Text style={styles.muted}>Approximate location</Text><Text style={styles.small}>
+      <View><Text style={styles.muted}>Approximate location</Text><Text style={styles.small}>
         {record.location.accuracy != null ? 'About ' + Math.round(record.location.accuracy) + ' m accuracy. ' : ''}Use your clues indoors.</Text></View>
-      <Button kind="link" label="Open in Maps ↗" disabled={view.busy} onPress={() => { void controller.openMaps(); }} />
+      <Button kind="secondary" label="Open in Maps ↗" disabled={view.busy} onPress={() => { void controller.openMaps(); }} />
     </View> : <Text style={[styles.small, styles.section]}>No GPS location saved. Use your parking clues below.</Text>}
     <Pressable accessibilityRole="button" accessibilityState={{ expanded: helpOpen }} onPress={() => setHelpOpen(!helpOpen)} style={styles.helpToggle}>
       <Text style={[styles.helpLabel, styles.flex]}>Need help finding it?</Text><Text style={styles.chevron}>{helpOpen ? '⌄' : '›'}</Text>
@@ -188,10 +193,12 @@ function RecordView({ record, view, controller, enlarge }: { record: ParkingReco
       </View>)}
       <Text style={styles.small}>GPS cannot identify a level or provide a route inside a car park.</Text>
     </View> : null}
-    <Button kind="link" label="Save a new parking spot" disabled={view.busy} onPress={() => controller.begin('new')} />
     <View style={styles.footer}>
-      <Button label={view.busy ? 'Please wait…' : 'Found my car'} disabled={view.busy} onPress={() => { void controller.found(); }} />
+      <Button kind="completion" icon={view.busy ? undefined : 'check'} label={view.busy ? 'Please wait…' : 'Found my car'}
+        disabled={view.busy} onPress={() => { void controller.found(); }} />
       <Text style={styles.footerCopy}>Ends this parking record. You can undo it.</Text>
+      <View style={styles.newParkingArea}><Button kind="subtle" icon="plus" label="New parking"
+        disabled={view.busy} onPress={() => controller.begin('new')} /></View>
     </View>
   </>;
 }
@@ -208,7 +215,7 @@ function Empty({ view, controller }: { view: ViewState; controller: ParkingContr
     <Text style={styles.emptyCopy}>Save a few clues when you park, then come back here to find your car.</Text>
     <View style={styles.section}><Text accessibilityRole="header" style={styles.h2}>Forgot to save?</Text>
       <Text style={styles.muted}>Think of your entry point, the level signs and any nearby lifts. This app only knows the clues you saved.</Text></View>
-    <View style={styles.footer}><Button label="Save parking" disabled={view.busy} onPress={() => controller.begin('new')} />
+    <View style={styles.footer}><Button label="Add parking" icon="plus" disabled={view.busy} onPress={() => controller.begin('new')} />
       <Text style={styles.footerCopy}>Your parking clues stay on this phone.</Text></View>
   </>;
 }
@@ -299,13 +306,21 @@ const styles = StyleSheet.create({
   chevron: { color: c.muted, fontSize: 23 },
   footer: { marginTop: 'auto', paddingTop: 24 },
   footerCopy: { marginTop: 12, color: c.muted, fontSize: 12, lineHeight: 18, textAlign: 'center' },
-  button: { minHeight: 48, paddingHorizontal: 14, paddingVertical: 12, justifyContent: 'center', alignItems: 'center', borderRadius: 11 },
-  primary: { minHeight: 56, backgroundColor: c.green, borderRadius: 13 },
-  secondary: { borderWidth: 1, borderColor: c.border, backgroundColor: '#fff', marginTop: 12 },
+  button: { minHeight: 48, paddingHorizontal: 14, paddingVertical: 12, flexDirection: 'row', gap: 10,
+    justifyContent: 'center', alignItems: 'center', borderRadius: 11 },
+  primary: { minHeight: 56, backgroundColor: c.green, borderRadius: 14 },
+  completion: { minHeight: 54, paddingHorizontal: 22, paddingVertical: 14, backgroundColor: c.finish, borderRadius: 999,
+    shadowColor: '#164f2f', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.14, shadowRadius: 7, elevation: 3 },
+  completionPressed: { backgroundColor: '#0c693d', transform: [{ translateY: 1 }],
+    shadowOffset: { width: 0, height: 1 }, shadowRadius: 2, elevation: 1 },
+  secondary: { borderWidth: 1.5, borderColor: c.green, backgroundColor: c.background, marginTop: 12 },
   link: { minHeight: 44, paddingHorizontal: 4, backgroundColor: 'transparent' },
-  buttonText: { fontSize: 16, lineHeight: 24, fontWeight: '600' },
+  buttonText: { fontSize: 16, lineHeight: 24, fontWeight: '600', textAlign: 'center', flexShrink: 1 },
+  buttonIcon: { fontSize: 22, lineHeight: 26 },
   primaryText: { color: '#fff' },
   linkText: { color: c.green, fontSize: 14, lineHeight: 22 },
+  subtleText: { color: c.muted, fontWeight: '500' },
+  newParkingArea: { marginTop: 18, paddingTop: 9, borderTopWidth: 1, borderTopColor: '#e1e7e0' },
   disabled: { opacity: 0.5 },
   pressed: { opacity: 0.7 },
   error: { padding: 12, backgroundColor: '#f7eee6', color: c.error, fontSize: 13, lineHeight: 20, borderRadius: 8, marginTop: 12 },
@@ -323,7 +338,7 @@ const styles = StyleSheet.create({
   smallValue: { fontSize: 22, lineHeight: 30, letterSpacing: 0, paddingTop: 8 },
   recordDivider: { paddingLeft: 18, borderLeftWidth: 1, borderLeftColor: '#d1ddce' },
   landmark: { marginTop: 17, paddingTop: 14, borderTopWidth: 1, borderTopColor: '#d6e0d3', color: '#4a6250', fontSize: 15, lineHeight: 22 },
-  mapsRow: { marginTop: 14, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 },
+  mapsRow: { marginTop: 14, gap: 6 },
   helpToggle: { marginTop: 12, borderTopWidth: 1, borderTopColor: '#e0e5dc', flexDirection: 'row', alignItems: 'center', minHeight: 56, gap: 8 },
   helpLabel: { color: c.green, fontSize: 14, lineHeight: 20, fontWeight: '600' },
   steps: { gap: 19, paddingTop: 6, paddingBottom: 12 },
