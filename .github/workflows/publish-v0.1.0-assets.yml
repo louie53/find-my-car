@@ -1,0 +1,67 @@
+name: Publish verified v0.1.0 APK assets
+
+on:
+  push:
+    branches: [release-v0.1.0-assets]
+    paths: [.github/workflows/publish-v0.1.0-assets.yml]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-find-my-car-v0.1.0-assets
+  cancel-in-progress: false
+
+jobs:
+  upload:
+    if: github.repository == 'louie53/find-my-car'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: louie53/find-my-car
+      APK_SHA256: 2a11f4c19858e5802763da343746e9f79cc500295b40f27635cc0fac18ebb16e
+      APK_NAME: find-my-car-v0.1.0-android.apk
+    steps:
+      - name: Download the selected existing EAS build and verify bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          curl --fail --location --silent --show-error --max-time 90 \
+            'https://expo.dev/artifacts/eas/35-yVouwzg0Bij8H6NNsMSkNKx9XNCQ2z8D0xBGBTVU.apk' \
+            --output "$APK_NAME"
+          printf '%s  %s\n' "$APK_SHA256" "$APK_NAME" > SHA256SUMS.txt
+          sha256sum --check SHA256SUMS.txt
+          test "$(stat --format=%s "$APK_NAME")" = 84638224
+          unzip -tqq "$APK_NAME"
+      - name: Attach verified APK and checksum to the existing draft
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          gh release view v0.1.0 --json databaseId,isDraft,name,body > draft.json
+          RELEASE_ID="$(python3 - <<'PY'
+          import json
+          release = json.load(open('draft.json'))
+          assert release['isDraft'] is True
+          assert release['name'] == 'Find My Car v0.1.0 — Android APK'
+          assert 'c7ddbcbc-2b4f-424d-89d1-c67308c1e2d8' in release['body']
+          assert isinstance(release['databaseId'], int)
+          print(release['databaseId'])
+          PY
+          )"
+          gh release upload v0.1.0 "$APK_NAME" SHA256SUMS.txt
+          gh api "repos/louie53/find-my-car/releases/$RELEASE_ID" > release.json
+          python3 - <<'PY'
+          import json, os
+          release = json.load(open('release.json'))
+          assert release['draft'] is True
+          assets = {a['name']: a for a in release['assets']}
+          apk = assets[os.environ['APK_NAME']]
+          assert apk['size'] == 84638224
+          assert apk['state'] == 'uploaded'
+          assert apk['digest'] == 'sha256:' + os.environ['APK_SHA256']
+          assert assets['SHA256SUMS.txt']['state'] == 'uploaded'
+          print('GitHub draft APK digest and size match the selected EAS build; publication remains a separate step.')
+          PY
