@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+<rect width="1024" height="1024" fill="#2f694f"/>
+<g transform="translate(512 512) scale(1.1) translate(-512 -512)"><g stroke-linecap="round" stroke-linejoin="round">
+  <path d="M512 224C382 224 276 322 276 446C276 604 512 800 512 800S748 604 748 446C748 322 642 224 512 224Z" fill="none" stroke="#ffffff" stroke-width="44"/>
+  <mask id="car-cutouts"><rect width="1024" height="1024" fill="#ffffff"/><path d="M442 367H582L609 421H415Z" fill="#000000"/><rect x="394" y="478" width="50" height="26" rx="13" fill="#000000"/><rect x="580" y="478" width="50" height="26" rx="13" fill="#000000"/></mask>
+  <path d="M415 359Q423 339 445 339H579Q601 339 609 359L636 424Q656 436 656 463V536Q656 552 640 552H624V575Q624 587 612 587H596Q584 587 584 575V552H440V575Q440 587 428 587H412Q400 587 400 575V552H384Q368 552 368 536V463Q368 436 388 424Z" fill="#ffffff" mask="url(#car-cutouts)"/>
+</g></g>
+</svg>

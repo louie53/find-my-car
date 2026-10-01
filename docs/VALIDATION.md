@@ -4,7 +4,17 @@ Date: 2026-10-01, Pacific/Auckland. This file records development checks, not in
 
 ## Source candidate
 
-Independent source/controlled-adapter review passed on 3911449 (AR-v7: 81 tests, 28 location scenarios and 16 additional F03 regressions); the documentation-only 2bfd670 follow-up passed AR-v8. No APK hash/build ID has been verified as corresponding to the current source; the earlier user-reported cloud build is recorded below. This public source repository excludes local artifacts/ and the coordination reports. The local development record retains exact commits and SHA-256 evidence; paths below describe that evidence rather than files available in a clone.
+Independent source/controlled-adapter review passed on 3911449 (AR-v7: 81 tests, 28 location scenarios and 16 additional F03 regressions); the documentation-only 2bfd670 follow-up passed AR-v8. The v0.1.0 release is tagged at 2bfd670 and its APK/build correspondence is recorded below. The current v0.1.1 candidate adds launcher icon assets and updates version metadata; parking logic, data format and requested permissions are unchanged. Fresh source checks and generated icon/configuration checks passed; cloud APK build/inspection and physical launcher validation remain pending.
+
+This public source repository excludes local artifacts/ and the coordination reports. The local development record retains exact commits and SHA-256 evidence; paths below describe that evidence rather than files available in a clone.
+
+## Published v0.1.0 APK and v0.1.1 candidate
+
+[v0.1.0 is published](https://github.com/louie53/find-my-car/releases/tag/v0.1.0), with tag commit 2bfd6708225bb4cc9e8d440fe8bcc57ae4ffbf8f and EAS build c7ddbcbc-2b4f-424d-89d1-c67308c1e2d8. Expo records the build's working tree as dirty (2bfd670*); the APK's embedded configuration matches the later committed owner EAS association in a449ac9. Later d115dc9 changes are documentation only, and the application logic, dependencies and declared permissions are unchanged from the tagged source.
+
+The published APK is 84,638,224 bytes, with SHA-256 `2a11f4c19858e5802763da343746e9f79cc500295b40f27635cc0fac18ebb16e`. Offline inspection passed ZIP integrity and embedded-configuration checks. The merged manifest records com.louie53.findmycar, version 0.1.0 / versionCode 1, minimum SDK 29, target SDK 36, backup disabled and no blocked permissions. Its permissions are foreground coarse/fine location, camera, internet and the app's generated receiver permission. Debuggable is absent and therefore defaults to false. Evidence: artifacts/release-v0.1.0/build-provenance.json, apk-inspection.json and release-result.json. This was not APK signature verification, installation or a phone behaviour test.
+
+The v0.1.1 candidate adds the custom green car/location app icon, conventional icon PNG, Android adaptive foreground and monochrome PNGs under assets/icon, and versionCode 2. A fresh APK is required to show the icon. v0.1.0 remains available unchanged. v0.1.1 source checks, generated resources, build correspondence, merged manifest and launcher appearance must be recorded separately before claiming a checked release.
 
 ## Actual checks
 
@@ -31,7 +41,11 @@ Independent source/controlled-adapter review passed on 3911449 (AR-v7: 81 tests,
 | Historical developer EAS cloud build attempt | Did not execute: automatic approval rejected that source upload | development status |
 | User EAS build 84e530bc | User-provided output reports Build finished and app download; later emulator installation failed with spawn adb ENOENT. Exact source/configuration and F03 inclusion unverified | AR-v6 section 6 and review-build-84e530bc evidence |
 | Android SDK/adb | Not available in PATH or usual paths checked | development status |
-| Final APK / independent Android physical-device acceptance | NOT TESTED; user Android Expo Go trial reported normal, operations/revision unspecified | No reviewed APK hash, source correspondence or independent device checklist |
+| Published v0.1.0 APK inspection | PASS: ZIP integrity, embedded configuration and merged Android manifest; no blocked permissions present | artifacts/release-v0.1.0/apk-inspection.json; build-provenance.json; published release checksum |
+| v0.1.1 source checks | PASS: typecheck, lint, 81 tests and Android JS export | artifacts/icon-v0.1.1/check.log; export.log |
+| v0.1.1 icon/native inputs | PASS: 1024px/alpha/safe-zone and 48px mask previews; generated version2/0.1.1, foreground/monochrome resources at all densities, background and permission checks | artifacts/icon-v0.1.1/icon-assets-check.json; icon-mask-preview.png; prebuild.log; android-config.log |
+| v0.1.1 APK/launcher | PENDING: fresh cloud build, final APK inspection and physical launcher | Prior APK evidence does not cover this package |
+| Independent Android physical-device acceptance | NOT TESTED; user Android Expo Go trial reported normal, operations/revision unspecified | Published APK inspection is separate from an independent device checklist |
 
 The first typecheck failed because Node types were not in the TypeScript type list; this was fixed. The first lint failed on effect-driven photo-state reset; keyed photo components fixed it. An ESLint 10 compatibility trial failed in Expo's React plugin; the project returned to Expo-compatible ESLint 9.39.5. Failed checks are retained in local logs; they are not counted as passes.
 
@@ -105,9 +119,9 @@ The root reran typecheck, lint, all 81 tests and the Android export. The expande
 
 The tests use isolated in-memory adapters. Repository restart models persisted metadata re-reading, not Android process lifecycle or a real filesystem. Native integration, cache-photo copying and Activity recovery still need physical-device evidence.
 
-The generated Android manifest includes removal directives for blocked permissions. This is build input inspection, not inspection of the final merged APK. The minimum SDK is 29 because the locked ImagePicker's pre-Android-10 camera path also requires legacy storage permission, which this app does not request.
+The generated Android manifest includes removal directives for blocked permissions. Generated-configuration checks inspect build inputs; the separate v0.1.0 APK inspection above verifies that release's final merged manifest. A fresh v0.1.1 APK still needs inspection. The minimum SDK is 29 because the locked ImagePicker's pre-Android-10 camera path also requires legacy storage permission, which this app does not request.
 
-The earlier developer EAS attempt was rejected by automatic approval review for insufficient source-upload authorisation; that attempt dispatched no build or upload. AR-v6 later recorded the user's successful cloud build output for 84e530bc-0e0e-43ba-a2da-3f4bed01c5f4. The later build is separate evidence and has not been bound to this F03 candidate or independently installed. The developer did not perform another cloud build, upload or account probe during this repair.
+The earlier developer EAS attempt was rejected by automatic approval review for insufficient source-upload authorisation; that attempt dispatched no build or upload. AR-v6 later recorded the user's successful cloud build output for 84e530bc-0e0e-43ba-a2da-3f4bed01c5f4. That earlier build remains unbound to the F03 candidate and was not independently installed. The subsequent c7ddbcbc build was inspected and published as v0.1.0, as recorded above. These are separate builds and validation scopes.
 
 ## Independent re-run
 
