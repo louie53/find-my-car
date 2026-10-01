@@ -1,11 +1,12 @@
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import {
   ActivityIndicator, Alert, BackHandler, Image, Keyboard, KeyboardAvoidingView,
   Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { type ParkingController, type ViewState } from '../controller/ParkingController';
-import { findingSteps, type Draft, type ParkingRecord } from '../domain/parking';
+import { type PhotoStore } from '../data/ParkingRepository';
+import { findingSteps, needsIndoorClue, type Draft, type ParkingRecord } from '../domain/parking';
 
 const c = { background: '#fbfcfa', ink: '#202a25', muted: '#627168', green: '#2f694f', finish: '#11804b',
   panel: '#eef1ec', record: '#eef3ec', border: '#c7d0c8', pale: '#e7efe2', error: '#7c482c' };
@@ -33,15 +34,38 @@ function Feedback({ view }: { view: ViewState }) {
   </>;
 }
 
-function Photo({ uri, enlarge }: { uri: string; enlarge: () => void }) {
-  const [failed, setFailed] = useState(false);
+function Photo({ uri, filename, photos, enlarge, onAvailability }: {
+  uri: string; filename: string; photos: PhotoStore; enlarge: () => void;
+  onAvailability: (uri: string, usable: boolean) => void;
+}) {
+  const [fileStatus, setFileStatus] = useState<'checking' | 'present' | 'missing'>('checking');
+  const [displayStatus, setDisplayStatus] = useState<'loading' | 'loaded' | 'failed'>('loading');
+  useEffect(() => {
+    let active = true;
+    void photos.exists(filename).then((exists) => {
+      if (active) setFileStatus(exists ? 'present' : 'missing');
+    }).catch(() => { if (active) setFileStatus('missing'); });
+    return () => { active = false; };
+  }, [filename, photos]);
+  const usable = fileStatus === 'present' && displayStatus === 'loaded';
+  useEffect(() => { onAvailability(uri, usable); }, [uri, usable, onAvailability]);
+  const failed = fileStatus === 'missing' || displayStatus === 'failed';
   return failed
     ? <Text accessibilityRole="alert" style={styles.error}>This photo is unavailable. Your saved parking clues have been kept. Retake or remove the photo when editing.</Text>
     : <Pressable accessibilityRole="button" accessibilityLabel="Enlarge parking photo" onPress={enlarge} style={styles.photo}>
       <Image source={{ uri }} accessibilityLabel="Your parking photo" style={styles.image} resizeMode="cover"
-        onError={() => setFailed(true)} />
+        onLoad={() => setDisplayStatus((status) => status === 'failed' ? status : 'loaded')}
+        onError={() => setDisplayStatus('failed')} />
       <Text style={styles.photoCaption}>Tap to enlarge</Text>
     </Pressable>;
+}
+
+function usePhotoClue() {
+  const [availability, setAvailability] = useState<{ uri: string; usable: boolean } | null>(null);
+  const report = useCallback((uri: string, usable: boolean) => {
+    setAvailability((previous) => previous?.uri === uri && previous.usable === usable ? previous : { uri, usable });
+  }, []);
+  return { availability, report };
 }
 
 function LocationPanel({ view, controller }: { view: ViewState; controller: ParkingController }) {
@@ -73,13 +97,25 @@ function LocationPanel({ view, controller }: { view: ViewState; controller: Park
   </View>;
 }
 
-type FormProps = { draft: Draft; view: ViewState; controller: ParkingController; enlarge: (uri: string) => void; cancel: () => void };
-function Form({ draft, view, controller, enlarge, cancel }: FormProps) {
+type FormProps = { draft: Draft; view: ViewState; controller: ParkingController; enlarge: (uri: string) => void;
+  cancel: () => void; scrollTo: (y: number) => void };
+function Form({ draft, view, controller, enlarge, cancel, scrollTo }: FormProps) {
   const [noteOpen, setNoteOpen] = useState(Boolean(draft.landmark));
+  const levelInput = useRef<TextInput>(null);
+  const levelTop = useRef(0);
+  const photoClue = usePhotoClue();
   const { width, fontScale } = useWindowDimensions();
   const stacked = width < 350 || fontScale > 1.3;
   const isEdit = draft.mode === 'edit';
   const photoUri = draft.photo ? controller.repo.photos.uri(draft.photo) : null;
+  const usablePhoto = Boolean(photoUri && photoClue.availability?.uri === photoUri && photoClue.availability.usable);
+  const remind = needsIndoorClue(draft, usablePhoto);
+  const addLevel = () => {
+    if (view.busy) return;
+    scrollTo(levelTop.current);
+    levelInput.current?.focus();
+  };
+  const takePhoto = () => { Keyboard.dismiss(); void controller.capture(); };
 
   function save() {
     Keyboard.dismiss();
@@ -100,12 +136,12 @@ function Form({ draft, view, controller, enlarge, cancel }: FormProps) {
     <Text style={styles.intro}>Save a few clues to find your car later.</Text>
     <Feedback view={view} />
     <View style={styles.section}><LocationPanel view={view} controller={controller} /></View>
-    <View style={styles.section}>
+    <View style={styles.section} onLayout={(event) => { levelTop.current = event.nativeEvent.layout.y; }}>
       <Text accessibilityRole="header" style={styles.h2}>Where did you park?</Text>
       <View style={[styles.fields, stacked && styles.stacked]}>
         <View style={stacked ? styles.fullWidth : styles.flex}>
           <Text nativeID="levelLabel" style={styles.label}>Level</Text>
-          <TextInput accessibilityLabel="Level" accessibilityLabelledBy="levelLabel" style={styles.input}
+          <TextInput ref={levelInput} accessibilityLabel="Level" accessibilityLabelledBy="levelLabel" style={styles.input}
             value={draft.level} onChangeText={(v) => controller.setField('level', v)}
             placeholder="e.g. 3" placeholderTextColor="#7b877f" editable={!view.busy}
             maxLength={60} autoCorrect={false} returnKeyType="done" />
@@ -121,18 +157,20 @@ function Form({ draft, view, controller, enlarge, cancel }: FormProps) {
     </View>
     {photoUri ? <View style={styles.section}>
       <Text accessibilityRole="header" style={styles.h2}>Parking photo</Text>
-      <View style={styles.photoSpacing}><Photo key={photoUri} uri={photoUri} enlarge={() => enlarge(photoUri)} /></View>
+      <View style={styles.photoSpacing}><Photo key={photoUri} uri={photoUri} filename={draft.photo!}
+        photos={controller.repo.photos} onAvailability={photoClue.report} enlarge={() => enlarge(photoUri)} /></View>
       <View style={styles.inlineActions}>
-        <Button kind="link" label="Retake photo" disabled={view.busy} onPress={() => { void controller.capture(); }} />
+        <Button kind="link" label="Retake photo" disabled={view.busy} onPress={takePhoto} />
         <Button kind="link" label="Remove photo" disabled={view.busy} onPress={() => controller.removePhoto()} />
       </View>
     </View> : <Pressable accessibilityRole="button" accessibilityLabel="Add a parking photo, optional"
       accessibilityState={{ disabled: view.busy }} disabled={view.busy}
-      onPress={() => { Keyboard.dismiss(); void controller.capture(); }}
+      onPress={takePhoto}
       style={({ pressed }) => [styles.addPhoto, pressed && styles.pressed, view.busy && styles.disabled]}>
       <View style={styles.photoHeading}><Text style={styles.plus}>+</Text><Text style={[styles.h2, styles.flex]}>Add a photo</Text><Text style={styles.small}>Optional</Text></View>
       <Text style={styles.photoCopy}>Capture a pillar, level sign or nearby lift.</Text>
     </Pressable>}
+    {isEdit ? <Text style={styles.small}>Only add a photo if it shows where you parked.</Text> : null}
     <Pressable accessibilityRole="button" accessibilityLabel="Add a landmark note, optional"
       accessibilityState={{ expanded: noteOpen, disabled: view.busy }} disabled={view.busy}
       onPress={() => setNoteOpen(!noteOpen)} style={styles.noteToggle}>
@@ -145,6 +183,17 @@ function Form({ draft, view, controller, enlarge, cancel }: FormProps) {
       editable={!view.busy} textAlignVertical="top" /> : null}
     {view.error?.includes('Camera permission') ? <Button kind="link" label="Open App settings" disabled={view.busy} onPress={() => { void controller.openSettings(); }} /> : null}
     <View style={styles.footer}>
+      {remind ? <View style={styles.clueReminder}>
+        <Text style={styles.clueTitle}>Add a clue for indoor parking</Text>
+        <Text style={styles.clueCopy}>{isEdit
+          ? 'Remember a level, bay or landmark? Add it here. Your saved parking position stays the same.'
+          : 'GPS saves the area, but cannot identify a car park level. Add a level or photograph a sign before you leave.'}</Text>
+        {!isEdit ? <Text style={styles.small}>You can still save just the location.</Text> : null}
+        <View style={styles.inlineActions}>
+          <Button kind="link" label="Add a level" disabled={view.busy} onPress={addLevel} />
+          <Button kind="link" label={draft.photo ? 'Retake photo' : 'Add a photo'} disabled={view.busy} onPress={takePhoto} />
+        </View>
+      </View> : null}
       {view.busy ? <View style={styles.working}><ActivityIndicator color={c.green} /><Text style={styles.small}>Keeping your parking clues safe…</Text></View> : null}
       <Button label={view.busy ? 'Please wait…' : isEdit ? 'Save changes' : 'Save parking'} disabled={view.busy} onPress={save} />
       <Text style={styles.footerCopy}>You can save clues without GPS.</Text>
@@ -154,10 +203,13 @@ function Form({ draft, view, controller, enlarge, cancel }: FormProps) {
 
 function RecordView({ record, view, controller, enlarge }: { record: ParkingRecord; view: ViewState; controller: ParkingController; enlarge: (uri: string) => void }) {
   const [helpOpen, setHelpOpen] = useState(false);
+  const photoClue = usePhotoClue();
   const { width, fontScale } = useWindowDimensions();
   const stacked = width < 350 || fontScale > 1.3;
   const photoUri = record.photo ? controller.repo.photos.uri(record.photo) : null;
-  const steps = findingSteps(record);
+  const usablePhoto = Boolean(photoUri && photoClue.availability?.uri === photoUri && photoClue.availability.usable);
+  const remind = needsIndoorClue(record, usablePhoto);
+  const steps = findingSteps(record, usablePhoto);
   return <>
     <View style={styles.heading}>
       <Text accessibilityRole="header" style={[styles.title, styles.flex]}>Your parked car</Text>
@@ -168,15 +220,21 @@ function RecordView({ record, view, controller, enlarge }: { record: ParkingReco
     <View style={styles.recordCard}>
       <View style={[styles.recordGrid, stacked && styles.stacked]}>
         <View style={stacked ? styles.fullWidth : styles.flex}><Text style={styles.recordLabel}>Level</Text>
-          <Text style={[styles.recordValue, (!record.level || record.level.length > 6) && styles.smallValue]}>{record.level || 'Not added'}</Text></View>
+          <Text style={[styles.recordValue, (!record.level.trim() || record.level.length > 6) && styles.smallValue]}>{record.level.trim() || 'Not added'}</Text></View>
         <View style={[stacked ? styles.fullWidth : styles.flex, !stacked && styles.recordDivider]}><Text style={styles.recordLabel}>Zone / bay</Text>
-          <Text style={[styles.recordValue, (!record.zone || record.zone.length > 6) && styles.smallValue]}>{record.zone || 'Not added'}</Text></View>
+          <Text style={[styles.recordValue, (!record.zone.trim() || record.zone.length > 6) && styles.smallValue]}>{record.zone.trim() || 'Not added'}</Text></View>
       </View>
-      {record.landmark ? <Text style={styles.landmark}>{record.landmark}</Text> : null}
+      {record.landmark.trim() ? <Text style={styles.landmark}>{record.landmark.trim()}</Text> : null}
     </View>
     {photoUri ? <View style={styles.section}>
       <Text accessibilityRole="header" style={styles.h2}>Parking photo</Text>
-      <View style={styles.photoSpacing}><Photo key={photoUri} uri={photoUri} enlarge={() => enlarge(photoUri)} /></View>
+      <View style={styles.photoSpacing}><Photo key={photoUri} uri={photoUri} filename={record.photo!}
+        photos={controller.repo.photos} onAvailability={photoClue.report} enlarge={() => enlarge(photoUri)} /></View>
+    </View> : null}
+    {remind ? <View style={[styles.clueReminder, styles.section]}>
+      <Text style={styles.clueTitle}>Add a clue for indoor parking</Text>
+      <Text style={styles.clueCopy}>GPS saves an approximate area, but cannot identify a car park level. Add a remembered level, bay or landmark.</Text>
+      <Button kind="link" label="Add parking clues" disabled={view.busy} onPress={() => controller.begin('edit')} />
     </View> : null}
     {record.location ? <View style={styles.mapsRow}>
       <View><Text style={styles.muted}>Approximate location</Text><Text style={styles.small}>
@@ -224,6 +282,7 @@ export function ParkingApp({ controller }: { controller: ParkingController }) {
   const view = useSyncExternalStore(controller.subscribe, controller.getSnapshot, controller.getSnapshot);
   const [enlarged, setEnlarged] = useState<string | null>(null);
   const [photoFailed, setPhotoFailed] = useState(false);
+  const scroll = useRef<ScrollView>(null);
   const enlarge = (uri: string) => { setPhotoFailed(false); setEnlarged(uri); };
   useEffect(() => { void controller.boot(); }, [controller]);
 
@@ -254,7 +313,7 @@ export function ParkingApp({ controller }: { controller: ParkingController }) {
 
   return <SafeAreaView style={styles.screen} edges={['top', 'bottom', 'left', 'right']}>
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.content}>
+      <ScrollView ref={scroll} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.content}>
         <Text style={styles.brand}>FIND MY CAR</Text>
         {view.phase === 'loading' ? <View style={styles.loading}><ActivityIndicator color={c.green} size="large" /><Text style={styles.muted}>Reading your parking clues…</Text></View>
           : view.phase === 'blocked' ? <>
@@ -262,7 +321,8 @@ export function ParkingApp({ controller }: { controller: ParkingController }) {
             <Feedback view={view} />
             <Text style={styles.muted}>We will not replace saved data or remove photos while it cannot be read safely.</Text>
             <Button kind="secondary" label="Retry loading" onPress={() => { void controller.boot(); }} />
-          </> : view.draft ? <Form key={view.draft.id} draft={view.draft} view={view} controller={controller} enlarge={enlarge} cancel={cancel} />
+          </> : view.draft ? <Form key={view.draft.id} draft={view.draft} view={view} controller={controller} enlarge={enlarge} cancel={cancel}
+            scrollTo={(y) => scroll.current?.scrollTo({ y: Math.max(0, y - 12), animated: true })} />
             : view.state?.active ? <RecordView key={view.state.active.id} record={view.state.active} view={view} controller={controller} enlarge={enlarge} />
               : <Empty view={view} controller={controller} />}
       </ScrollView>
@@ -306,6 +366,9 @@ const styles = StyleSheet.create({
   chevron: { color: c.muted, fontSize: 23 },
   footer: { marginTop: 'auto', paddingTop: 24 },
   footerCopy: { marginTop: 12, color: c.muted, fontSize: 12, lineHeight: 18, textAlign: 'center' },
+  clueReminder: { padding: 14, borderRadius: 12, backgroundColor: c.panel, gap: 4, marginBottom: 16 },
+  clueTitle: { color: c.ink, fontSize: 14, lineHeight: 21, fontWeight: '600' },
+  clueCopy: { color: c.muted, fontSize: 13, lineHeight: 20 },
   button: { minHeight: 48, paddingHorizontal: 14, paddingVertical: 12, flexDirection: 'row', gap: 10,
     justifyContent: 'center', alignItems: 'center', borderRadius: 11 },
   primary: { minHeight: 56, backgroundColor: c.green, borderRadius: 14 },

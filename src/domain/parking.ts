@@ -45,6 +45,14 @@ export function hasClues(value: Pick<Draft, 'level' | 'zone' | 'landmark' | 'pho
   return Boolean(value.level.trim() || value.zone.trim() || value.landmark.trim() || value.photo || value.location);
 }
 
+export function hasIndoorClue(value: Pick<Draft, 'level' | 'zone' | 'landmark' | 'photo'>, usablePhoto: boolean): boolean {
+  return Boolean(value.level.trim() || value.zone.trim() || value.landmark.trim() || (value.photo && usablePhoto));
+}
+
+export function needsIndoorClue(value: Pick<Draft, 'level' | 'zone' | 'landmark' | 'photo' | 'location'>, usablePhoto: boolean): boolean {
+  return Boolean(value.location) && !hasIndoorClue(value, usablePhoto);
+}
+
 export function isPhotoName(value: unknown): value is string {
   return typeof value === 'string' && /^photo-[A-Za-z0-9-]{1,80}\.jpg$/.test(value);
 }
@@ -120,12 +128,12 @@ export function photoReferences(state: ParkingState, draft: Draft | null = null)
   return new Set(refs.filter((ref): ref is string => Boolean(ref)));
 }
 
-export function findingSteps(record: ParkingRecord): { title: string; copy: string }[] {
+export function findingSteps(record: ParkingRecord, usablePhoto = Boolean(record.photo)): { title: string; copy: string }[] {
   const steps: { title: string; copy: string }[] = [];
-  if (record.level) steps.push({ title: 'Go to level ' + record.level, copy: 'Follow the car park’s level signs.' });
-  if (record.zone) steps.push({ title: 'Look for ' + record.zone, copy: 'Use the zone or bay markings around you.' });
-  if (record.landmark) steps.push({ title: record.landmark, copy: 'Look for the landmark you noted when parking.' });
-  if (record.photo) steps.push({ title: 'Compare your parking photo', copy: 'Look for the same pillar, sign or nearby lift.' });
+  if (record.level.trim()) steps.push({ title: 'Go to level ' + record.level.trim(), copy: 'Follow the car park’s level signs.' });
+  if (record.zone.trim()) steps.push({ title: 'Look for ' + record.zone.trim(), copy: 'Use the zone or bay markings around you.' });
+  if (record.landmark.trim()) steps.push({ title: record.landmark.trim(), copy: 'Look for the landmark you noted when parking.' });
+  if (record.photo && usablePhoto) steps.push({ title: 'Compare your parking photo', copy: 'Look for the same pillar, sign or nearby lift.' });
   if (steps.length === 0 && record.location) steps.push({ title: 'Open your saved area in Maps', copy: 'The saved position is approximate and cannot identify an indoor level.' });
   return steps;
 }

@@ -8,6 +8,7 @@ An Android parking reminder with two main screens: save your parking clues, then
 
 - Save a level, zone/bay, landmark note, photo and optional foreground GPS position.
 - Save manual clues when location is denied, switched off or unavailable.
+- Get an optional indoor-parking reminder when only GPS is available, with shortcuts to add a level or sign photo. Add remembered clues later while keeping the saved position.
 - Take a real photo with the system camera, retake/remove it and view it full screen.
 - Edit clues while keeping the original parking time and coordinates.
 - Save a new spot with confirmation before replacing an active record.
@@ -85,7 +86,7 @@ Android backup and over-the-air updates are disabled in configuration. Uninstall
 Locally exercised checks:
 
 - TypeScript strict checking and ESLint.
-- 49 isolated logic/fault tests covering late location, timeout, camera checkpoint/recovery across repeated restarts, edits/cancellation, replacement, Found/Undo after repository restart, failed copies/writes and cleanup.
+- 67 isolated logic/fault tests covering late location, timeout, camera checkpoint/recovery across repeated restarts, edits/cancellation, replacement, Found/Undo after repository restart, failed copies/writes, cleanup and indoor-clue guidance/availability.
 - Android Hermes bundle export.
 - Expo native prebuild and generated Android configuration inspection.
 - A clean dependency installation and Expo dependency compatibility check.

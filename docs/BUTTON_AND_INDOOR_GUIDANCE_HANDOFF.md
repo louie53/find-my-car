@@ -1,6 +1,6 @@
 # Button implementation and indoor-clue proposal
 
-Date: 2026-09-30, Pacific/Auckland. Button styling is approved and implemented. The indoor-clue guidance below is a recommendation for review, not implemented or approved scope.
+Updated: 2026-10-01, Pacific/Auckland. Button styling is implemented. The user approved the indoor-clue guidance and requested independent acceptance; it is now implemented in this candidate.
 
 ## Implemented button hierarchy
 
@@ -21,9 +21,9 @@ Type checking, lint, 49 existing tests, Android Hermes export and the actual thr
 
 ## Why an indoor reminder is useful
 
-The current form only shows the no-level disclaimer when location accuracy is non-null. The record's complete indoor disclaimer is inside collapsed finding help. A GPS-only save is valid, but these placements can leave the user without a useful indoor clue. Buildings, indoor/underground use and reflected signals can degrade GPS position accuracy ([GPS.gov](https://www.gps.gov/gps-accuracy)). Reported horizontal accuracy does not establish a parking level; this app has no validated altitude-to-level mapping.
+Before this change, the form's no-level disclaimer appeared only when location accuracy was non-null, and the record's full indoor disclaimer was inside collapsed finding help. A GPS-only save is valid, but these placements could leave the user without a useful indoor clue. Buildings, indoor/underground use and reflected signals can degrade GPS position accuracy ([GPS.gov](https://www.gps.gov/gps-accuracy)). Reported horizontal accuracy does not establish a parking level; this app has no validated altitude-to-level mapping.
 
-Recommendation: show a calm inline reminder above the save action and an explicit supplement entry on GPS-only records. Keep the current save action available. Do not add a warning dialog, mandatory field, automatic camera launch, tracking or location-derived level guess.
+Implemented: a calm inline reminder above the save action and an explicit supplement entry on records without usable indoor clues. The current save action remains available. No new warning dialog, mandatory field, automatic camera launch, tracking or location-derived level guess was added.
 
 ## Display rule
 
@@ -34,19 +34,19 @@ const hasTextClue = Boolean(level.trim() || zone.trim() || landmark.trim());
 const needsIndoorClue = Boolean(location) && !hasTextClue && !usablePhoto;
 ~~~
 
-Accuracy is excluded: both 5 m and accuracy:null qualify. A whitespace-only field is empty. Any non-empty trimmed level, zone/bay or landmark, or a usable saved/copied photo, removes the reminder. usablePhoto means the existing photo path has successfully completed the app's copy/read/display checks; a pending, cancelled, failed-copy or known missing/unreadable photo must not count as success. Preserve existing photo errors and references, and offer retake/remove without automatically deleting data. Implementation must resolve this presentation status from existing photo checks before treating a photo as usable.
+Accuracy is excluded: both 5 m and accuracy:null qualify. A whitespace-only field is empty. Any non-empty trimmed level, zone/bay or landmark, or a usable saved/copied photo, removes the reminder. Photo usability requires both photos.exists(filename) and Image onLoad; a pending check, failed copy, missing file or decode error cannot count as success. Photo components are keyed by URI, cancel file-check updates on unmount and keep decoding failure sticky against late onLoad. The parent compares availability with the current URI; same reports bail out. References and existing errors remain, with retake/remove available. Cancelling a retake preserves the current keyed photo and its status.
 
-## Exact proposed copy and entry points
+## Implemented copy and entry points
 
 | Place and timing | Copy | Entry and effect |
 | --- | --- | --- |
-| New draft, directly above Save parking once needsIndoorClue becomes true | **GPS saves the area, but cannot identify a car park level. Add a level or photograph a sign before you leave.** Secondary line: **You can still save just the location.** | **Add a level** scrolls to and focuses the existing Level input on explicit tap. **Add a photo** invokes the existing camera/checkpoint flow on explicit tap. Save parking retains the existing behaviour and label. |
+| New draft, directly above Save parking once needsIndoorClue becomes true | Title: **Add a clue for indoor parking**. **GPS saves the area, but cannot identify a car park level. Add a level or photograph a sign before you leave.** Secondary line: **You can still save just the location.** | **Add a level** scrolls to and focuses the existing Level input on explicit tap. **Add a photo** invokes the existing camera/checkpoint flow after dismissing the keyboard; if an unusable photo remains referenced, the action is **Retake photo**. Save parking retains the existing behaviour and label. |
 | Record with needsIndoorClue, near the record card before the Maps area | **GPS saves an approximate area, but cannot identify a car park level. Add a remembered level, bay or landmark.** | **Add parking clues** opens the existing edit draft. It does not request a new position or auto-launch the camera. Keep any existing unavailable-photo error visible; do not imply a saved but missing photo was never saved. |
-| GPS-only edit draft, above Save changes | **Remember a level, bay or landmark? Add it here. Your saved parking position stays the same.** | Existing fields and camera actions. For photo guidance: **Only add a photo if it shows where you parked.** Save changes and Cancel keep their current semantics. |
+| GPS-only edit draft, above Save changes | **Remember a level, bay or landmark? Add it here. Your saved parking position stays the same.** | Add a level and Add a photo/Retake photo reuse the same existing fields and camera flow. For photo guidance: **Only add a photo if it shows where you parked.** Save changes and Cancel keep their current semantics. |
 
 The new-draft reminder appears with the first usable coordinate, and persists through a failed retry if the previous coordinate is retained. It disappears or returns as clues are added or removed. Avoid automatic focus, repeated announcements or modal interruptions; keep concise text available to screen readers. Edits preserve the record's original position and time. Do not infer whether the user has left the car park: the edit copy supports remembered clues and avoids suggesting a photo of the user's new location.
 
-## Boundary cases and proposed acceptance
+## Boundary cases and acceptance checks
 
 | Case | Expected behaviour |
 | --- | --- |
@@ -62,6 +62,8 @@ The new-draft reminder appears with the first usable coordinate, and persists th
 | Location request still running | Keep its existing progress display. Saving usable manual clues remains available; retain the current generation isolation so the late location cannot update the saved record. |
 | Camera or persistence transaction busy | Keep the existing busy/disabled state; never enable duplicate device or save actions. |
 
-The existing hasClues rule should continue allowing a location-only save. findingSteps should continue using saved clues; if this proposal is implemented later, align its text predicates with trim checks so historical whitespace does not produce empty finding steps. Keep the GPS-only Maps fallback. Targeted behavioural checks would cover reminder predicates, accuracy:null, whitespace and photo failure; real UI checks would cover focus/scroll, edit cancellation and maximum-font reachability.
+The existing hasClues rule still allows a location-only save. hasIndoorClue/needsIndoorClue derive only presentation guidance; they perform no writes. findingSteps now trims text and receives the current photo usability from the UI, skipping unavailable-photo comparison and preserving the GPS-only Maps fallback. Record labels also treat whitespace as empty. Repository, controller, native services, permissions, schema and dependencies are unchanged.
 
-No indoor-guidance implementation is included in this button commit. Review the copy, usable-photo handling and layout before approving that next change.
+Development checks: typecheck, lint and 67 tests PASS (49 existing + 18 new behaviour cases), Android Hermes export PASS, three actual F01 calls/five cases PASS, and an actual-TSX hook/element probe with 12 photo/shortcut scenarios PASS. The main developer inspected and reran the probes. Native image events, keyboard scrolling, maximum-font reachability and Android behaviour are not established by those JS probes. The current iOS Expo Go empty screen was captured after resolving a localhost IPv6/IPv4 development-server mismatch; GPS-only form/record interaction screenshots are still pending independent UI verification. No app data was cleared and no demo record was added to production source.
+
+Quick floor chips are deferred because different car parks use different labels; free text remains. No OCR, altitude inference, new permission or service was added. The completed source candidate, evidence hashes, local Metro route and independent review request are recorded in DEVELOPMENT_STATUS.md and ignored artifacts/validation-run.json.

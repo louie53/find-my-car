@@ -1,6 +1,6 @@
 # Validation notes
 
-Date: 2026-09-30, Pacific/Auckland. This file records development checks, not independent acceptance.
+Date: 2026-10-01, Pacific/Auckland. This file records development checks, not independent acceptance.
 
 ## Source candidate
 
@@ -11,9 +11,10 @@ The precise candidate commit and local evidence paths are in the coordinating de
 | Check | Current outcome | Evidence |
 | --- | --- | --- |
 | Clean locked dependency install | PASS, exit 0: npm ci --no-audit --cache /private/tmp/find-my-car-npm-cache --fetch-retries=1 --fetch-timeout=30000 | artifacts/npm-ci.log |
-| TypeScript / lint / 49 logic tests after approved button styling | PASS, exit 0: npm run check; 49 passed, 0 failed/skipped | artifacts/check-buttons.log |
-| Android Hermes export after approved button styling | PASS, exit 0: EXPO_NO_TELEMETRY=1 EXPO_OFFLINE=1 CI=1 npm run export:android; 636 modules | artifacts/export-buttons.log |
-| F01 actual Alert calls through installed RN | PASS, exit 0: TSX_DISABLE_CACHE=1 node --import tsx artifacts/verify-f01-alerts.cjs; 3 call sites / 5 new-edit cases | artifacts/verify-f01-buttons.log |
+| TypeScript / lint / 67 logic tests after indoor-clue guidance | PASS, exit 0: npm run check; 67 passed, 0 failed/skipped | artifacts/check-indoor.log |
+| Android Hermes export after indoor-clue guidance | PASS, exit 0: EXPO_NO_TELEMETRY=1 EXPO_OFFLINE=1 CI=1 npm run export:android; 636 modules | artifacts/export-indoor.log |
+| F01 actual Alert calls through installed RN | PASS, exit 0: TSX_DISABLE_CACHE=1 node --import tsx artifacts/verify-f01-alerts.cjs; 3 call sites / 5 new-edit cases | artifacts/verify-f01-indoor.log |
+| Actual TSX photo/shortcut JS probe | PASS, exit 0: node artifacts/verify-indoor-ui.cjs; 12 hook/element-stub scenarios, no native renderer | artifacts/verify-indoor-ui.log |
 | Native generation | PASS, exit 0: npx expo prebuild --platform android --no-install --clean | artifacts/prebuild.log |
 | Generated Android manifest/minimum SDK | PASS, exit 0: npm run check:android-config | artifacts/android-config.log |
 | Expo compatible dependencies | PASS, exit 0: npx expo install --check (online) reports Dependencies are up to date | artifacts/expo-install-check.log |
@@ -31,7 +32,7 @@ The final checks include the camera recovery fix and two added regression tests.
 
 The npm audit findings propagate from uuid through xcode and the Expo configuration toolchain. The underlying advisory concerns the uuid v3/v5/v6 buffer argument; this app generates IDs with expo-crypto. The suggested automatic remedy includes downgrading Expo to 46.0.21, which would break the selected SDK combination, so no force-fix was applied. This is not a claim that the dependency issue is resolved. See [the reported advisory](https://github.com/advisories/GHSA-w5hq-g745-h8pq).
 
-The current exported bundle is dist/_expo/static/js/android/index-c168f9493b8b96ecfe6147c3a1776e0c.hbc (1.6 MB). Generated files and evidence logs are ignored and are not part of the source upload. Java 25.0.2 was detected but has not been used for an Android compile; local SDK/JDK compatibility remains unverified.
+The current exported bundle is dist/_expo/static/js/android/index-6e409e704fbefa5bdf7f666ab0c4a43a.hbc (1.6 MB). Generated files and evidence logs are ignored and are not part of the source upload. Java 25.0.2 was detected but has not been used for an Android compile; local SDK/JDK compatibility remains unverified.
 
 ## AR-v2 F01 repair
 
@@ -59,7 +60,15 @@ The actual iPhone 17 iOS Expo Go record screen was captured with simctl and visu
 
 The first button check failed on exactOptionalPropertyTypes because the busy state explicitly passes undefined for the decorative icon. The optional prop type was corrected; the complete check then passed. The failed log is retained at artifacts/check-buttons-first-attempt.log and is not counted as a pass. The Android export and current three-call/five-case F01 probe passed. A read-only development agent reviewed the visual scope, handlers, disabled state, icon accessibility and unchanged data protections.
 
-The preceding 8561c79 evidence is preserved in artifacts/source-candidate-8561c79/. The indoor-clue recommendation is documented in [the development handoff](BUTTON_AND_INDOOR_GUIDANCE_HANDOFF.md); it has not been implemented or approved by this button change.
+The preceding 8561c79 evidence is preserved in artifacts/source-candidate-8561c79/. The button-candidate 41103ec evidence is preserved in artifacts/source-candidate-41103ec/. The user subsequently approved the indoor-clue guidance documented in [the development handoff](BUTTON_AND_INDOOR_GUIDANCE_HANDOFF.md).
+
+## Approved indoor-clue guidance
+
+The form now suggests a level or sign photo above Save when a valid position exists but all trimmed text clues and usable photos are absent. Edits use remembered-clue copy and preserve coordinates/time; Add parking clues on the record opens the existing editor. Add a level uses the direct ScrollView-content section layout coordinate and focuses the existing input. Add a photo dismisses the keyboard and reuses capture/checkpoint/recovery. Reminder controls use the existing transaction busy guards; location loading alone still permits manual save.
+
+Photo usability requires a current URI, successful file-existence check and successful Image load. Missing/check-failed/decode-failed photos retain their references and error UI and do not suppress the reminder or add an unavailable-photo comparison step. Unmount guards and sticky decode failure cover late async events. The 18 new tests cover guidance predicates, null/0/5 accuracy, whitespace, clue add/remove, photo failures, Maps fallback, location-only persistence, edit cancellation, old-record isolation and Found/Undo across restarts. The 12-case actual-TSX probe covers photo-event order, read errors, unmount, stable callbacks, URI identity, retained-photo shape and shortcut/busy actions. These are synthetic JavaScript checks, not native image or pixel tests.
+
+The simulator and old local server were stopped at the start of this session. A new localhost-only Metro server first bound IPv6 while its manifest advertised 127.0.0.1, causing Expo Go launch errors. Restarting with node --dns-result-order=ipv4first corrected the connection; iOS bundled and the actual empty app screen loaded. Screenshots and local connection notes are retained under artifacts/indoor/. No app data was cleared, record written, permission expanded or sample record added to production source. GPS-only reminder screens, keyboard/focus movement, camera flow, maximum fonts and Android rendering remain pending UI/device verification. The source and checks are complete for independent targeted review.
 
 ## Coverage boundaries
 
