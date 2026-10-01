@@ -49,10 +49,22 @@
           "microphonePermission": false
         }
       ],
-      ["expo-build-properties", {"android": {"minSdkVersion": 29}}]
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 29
+          }
+        }
+      ]
     ],
     "updates": {
       "enabled": false
+    },
+    "extra": {
+      "eas": {
+        "projectId": "a4f58269-5d5c-4d5d-81dc-a427a6c5de6f"
+      }
     }
   }
 }
