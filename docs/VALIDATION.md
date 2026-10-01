@@ -4,7 +4,7 @@ Date: 2026-10-01, Pacific/Auckland. This file records development checks, not in
 
 ## Source candidate
 
-The precise candidate commit and local evidence paths are in the coordinating development status. After committing, the ignored artifacts/review-manifest.json contains SHA-256 values for every tracked file and the exact Git revision. No APK hash/build ID has been verified as corresponding to the current candidate; the earlier user-reported cloud build is recorded below.
+Independent source/controlled-adapter review passed on 3911449 (AR-v7: 81 tests, 28 location scenarios and 16 additional F03 regressions); the documentation-only 2bfd670 follow-up passed AR-v8. No APK hash/build ID has been verified as corresponding to the current source; the earlier user-reported cloud build is recorded below. This public source repository excludes local artifacts/ and the coordination reports. The local development record retains exact commits and SHA-256 evidence; paths below describe that evidence rather than files available in a clone.
 
 ## Actual checks
 
@@ -22,6 +22,7 @@ The precise candidate commit and local evidence paths are in the coordinating de
 | F03 services-off repair: typecheck / lint / 81 tests | PASS, exit 0: TSX_DISABLE_CACHE=1 npm run check; 81 passed, 0 failed/skipped | artifacts/check-f03.log |
 | F03 Android Hermes export | PASS, exit 0: EXPO_NO_TELEMETRY=1 EXPO_OFFLINE=1 CI=1 npm run export:android; 637 modules | artifacts/export-f03.log |
 | F03 actual native-adapter/LocationPanel JS extraction | PASS, exit 0: node artifacts/verify-location-permission.cjs; 28 controlled scenarios including three services-off paths, failed queries and recovery | artifacts/verify-location-f03.log |
+| Public-source preparation with committed owner EAS association | PASS, exit 0: typecheck / lint / 81 tests and Android Hermes export, 637 modules | artifacts/github-publication/check.log; artifacts/github-publication/export.log |
 | Native generation | PASS, exit 0: npx expo prebuild --platform android --no-install --clean | artifacts/prebuild.log |
 | Generated Android manifest/minimum SDK | PASS, exit 0: npm run check:android-config | artifacts/android-config.log |
 | Expo compatible dependencies | PASS, exit 0: npx expo install --check (online) reports Dependencies are up to date | artifacts/expo-install-check.log |
@@ -40,13 +41,13 @@ The final checks include the camera recovery fix and two added regression tests.
 
 The npm audit findings propagate from uuid through xcode and the Expo configuration toolchain. The underlying advisory concerns the uuid v3/v5/v6 buffer argument; this app generates IDs with expo-crypto. The suggested automatic remedy includes downgrading Expo to 46.0.21, which would break the selected SDK combination, so no force-fix was applied. This is not a claim that the dependency issue is resolved. See [the reported advisory](https://github.com/advisories/GHSA-w5hq-g745-h8pq).
 
-The current exported bundle is dist/_expo/static/js/android/index-6071eaf646df7dc98f0bfb5121c435f8.hbc (1.6 MB). It is a JavaScript export, not an APK; the export used the current working-tree app.json with the user's uncommitted EAS association. The committed source snapshot preserves the previously committed configuration separately. Generated files and evidence logs are ignored and are not part of the source upload. Java 25.0.2 was detected but has not been used for an Android compile; local SDK/JDK compatibility remains unverified.
+The development export is dist/_expo/static/js/android/index-6071eaf646df7dc98f0bfb5121c435f8.hbc (1.6 MB), a JavaScript export rather than an APK. During F03 review the user's EAS association was uncommitted and separate from the reviewed configuration. That exact project association was later committed as a449ac9 for traceable builds; it contains a project UUID rather than credentials. Typecheck, lint, all 81 tests and the export passed again before public-source publication. Generated files and evidence logs remain ignored. Java 25.0.2 was detected but has not been used for a local Android compile; local SDK/JDK compatibility remains unverified.
 
 ## AR-v2 F01 repair
 
 The replacement confirmation, Cancel-triggered discard confirmation and hardware-Back-triggered discard confirmation now pass `{ cancelable: true }` explicitly to `Alert.alert`. No `onDismiss` handler is supplied. Dismissing a confirmation therefore does not call save or discard; the existing draft, saved record and photo references remain in place. Only the explicit Replace/Discard buttons perform their respective actions.
 
-TypeScript, lint and the existing 49 tests passed after the change; the Android Hermes export also passed. The generated Android configuration, install, dependency check and audit rows above retain evidence from the previous candidate because no dependencies or native configuration changed. AR-v3 subsequently closed the F01 source-configuration defect on 8561c79. The new button candidate still needs targeted independent revalidation, and physical Android Back behaviour is NOT TESTED.
+TypeScript, lint and the existing 49 tests passed after the change; the Android Hermes export also passed. The generated Android configuration, install, dependency check and audit rows above retain evidence from the previous candidate because no dependencies or native configuration changed. AR-v3 subsequently closed the F01 source-configuration defect on 8561c79; later source reviews retained that result. Detailed physical Android Back evidence remains NOT TESTED.
 
 A development-only probe extracts the three actual Alert argument lists from the current TSX and executes them through installed React Native 0.86.3 Alert.js. With real repository/controller code and synthetic storage/photos, all five new/edit scenarios preserve the draft, original record, photo files, persisted data and view snapshot on native dismissal or Keep editing; save/cancel calls remain zero. Positive-button controls invoke the intended Replace/Discard action. The probe is retained in ignored artifacts/verify-f01-alerts.cjs, separate from the 49 project tests and independent Astra evidence.
 

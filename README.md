@@ -2,7 +2,9 @@
 
 An Android parking reminder with two main screens: save your parking clues, then use them to find your car. Built with React Native, Expo and TypeScript.
 
-**Status: source review candidate. A standalone APK corresponding to the current candidate and complete Android device acceptance have not been verified.** An Android Expo Go trial has user-reported success, with coverage still to be confirmed. The checks below do not replace complete physical-device testing. Android 10 (API 29) or newer is required.
+[![Check Android source](https://github.com/louie53/find-my-car/actions/workflows/check.yml/badge.svg)](https://github.com/louie53/find-my-car/actions/workflows/check.yml)
+
+**Status: source and controlled-logic review passed; standalone APK acceptance pending.** The owner reported a successful Android Expo Go trial, but the tested revision and operation coverage were not recorded. An APK matching the latest source still needs verification and Xiaomi 15 / Android 16 installation testing. Android 10 (API 29) or newer is required.
 
 ## What you can do
 
@@ -19,7 +21,7 @@ A fresh installation has no example record or simulated photo. GPS is approximat
 
 ## APK and trying the app
 
-No release APK or standalone installation has been verified in this development evidence. EAS account/configuration and source-upload authorisation must be checked for the concrete build inputs; earlier failed login/upload probes are historical results, not a fresh check of the user's current setup.
+There is no verified release APK for the current source. A previous EAS cloud build completed, but its correspondence to the latest fixes and standalone phone behaviour have not been verified.
 
 After an approved APK has been built, record its source commit, build ID and SHA-256, then follow [the Android device checklist](docs/ANDROID_DEVICE_CHECKS.md). Release publication is a separate delivery step.
 
@@ -46,15 +48,14 @@ Expo Go or a development build is useful for iteration, but does not prove stand
 
 ## Build a standalone Android APK
 
-The preview profile in [eas.json](eas.json) creates an internal APK without a development client. Once the reviewed source upload is approved and the account owner has logged into EAS on their own computer:
+The preview profile in [eas.json](eas.json) creates an internal APK without a development client. Authenticate with an account authorised for the EAS project configured in app.json:
 
 ~~~sh
 npx eas-cli@24.8.0 login
-npx eas-cli@24.8.0 build:configure
 npm run build:preview
 ~~~
 
-Login and signing credentials must remain outside the repository. The owner must handle any account, consent or paid-service decision. Review any project-ID/configuration changes before rebuilding, and bind the build to the resulting exact commit.
+app.json contains the owner's EAS project identifier, which is project configuration rather than a login credential. If building a fork, link your own Expo project before building. Keep login and signing credentials outside the repository, review project configuration changes, and bind the build to the resulting exact commit.
 
 The EAS upload root must be this isolated repository. [.easignore](.easignore) excludes native generated folders, caches, local evidence, parking photos, environment files and signing material. App parking data is stored on the phone; EAS is a source compilation service, not app data synchronisation.
 
@@ -73,7 +74,7 @@ The app writes one versioned AsyncStorage object containing an active record, an
 
 Photos are copied before writing their metadata. Saved/ended/restored UI state changes only after storage succeeds, and obsolete photos are removed afterwards. A failed write keeps the prior record and the current draft. Cleanup failures are reported separately from successful saving.
 
-The native location adapter requests foreground permission before starting the 15-second position deadline. Waiting for a permission decision still allows manual clues, saving and cancellation. Saving, leaving, retrying or opening the camera invalidates previous work. An old result cannot replace a new draft or the parking coordinates. Editing never requests permission or a replacement position. App settings is suggested for denied permission; an authorised request without a position offers retry and manual saving.
+The native location adapter requests foreground permission before starting the 15-second position deadline. Waiting for a permission decision still allows manual clues, saving and cancellation. Saving, leaving, retrying or opening the camera invalidates previous work. An old result cannot replace a new draft or the parking coordinates. Editing never requests permission or a replacement position. Confirmed system Location Services being off takes priority over a denied-permission result and points to phone settings. Otherwise, denied permission offers App settings; an authorised request without a position offers retry and manual saving.
 
 For iOS Simulator trials, configure a simulated position for the selected device ([Expo instructions](https://docs.expo.dev/versions/v57.0.0/sdk/location/#ios-simulator)). Permission alone does not supply location data. Simulator positions are test data, not evidence of real GPS accuracy.
 
@@ -93,7 +94,7 @@ Locally exercised checks:
 - Expo native prebuild and generated Android configuration inspection.
 - A clean dependency installation and Expo dependency compatibility check.
 
-Exact commands, exit codes, versions and the tested commit are recorded in [validation notes](docs/VALIDATION.md). The prepared GitHub Actions workflow has not run on GitHub.
+Exact commands, exit codes, versions and reviewed baselines are recorded in [validation notes](docs/VALIDATION.md). [GitHub Actions](https://github.com/louie53/find-my-car/actions/workflows/check.yml) runs dependency installation, type checking, lint, tests and an Android JavaScript export on pushes and pull requests. It does not build or validate a standalone APK. Local evidence logs and coordination reports are excluded from this repository.
 
 The dependency audit reports 10 moderate findings in Expo's toolchain dependency chain, with no high or critical findings. This remains a recorded dependency issue; the audit's suggested Expo downgrade was not applied.
 
@@ -108,8 +109,8 @@ Not yet tested: real Android GPS/permissions, camera output/orientation, Activit
 - src/ui: native form/detail screens, empty state, help and photo modal.
 - tests: synthetic adapters and fault/race tests.
 
-The [v4 design reference](https://www.figma.com/design/eujnRpaXlRhNVJb4X8habe?node-id=5-2) supplied the two-screen layout. The app uses native controls and its own implementation. Design-file access has not been changed. External Maps replaces the design's schematic area preview.
+The app implements a two-screen layout using native controls. External Maps opens the saved destination; the app does not implement indoor navigation.
 
-Implementation and automated tests were written with Codex (GPT-6.1 Sol) assistance. Prior fixed candidates received targeted independent source/logic review. The new permission-handling candidate needs its own review; final native/device and standalone APK acceptance remain pending.
+Implementation and automated tests were written with Codex assistance. Independent source/controlled-adapter review passed on 3911449, including 81 tests, 28 location scenarios and 16 additional F03 regressions. The documentation-only follow-up 2bfd670 also passed independent review. Final native/device and standalone APK acceptance remain pending.
 
 API references: [Expo Location](https://docs.expo.dev/versions/v57.0.0/sdk/location/), [ImagePicker](https://docs.expo.dev/versions/v57.0.0/sdk/imagepicker/), [FileSystem](https://docs.expo.dev/versions/v57.0.0/sdk/filesystem/), [APK builds](https://docs.expo.dev/build-reference/apk/). The Android 10 minimum avoids the older ImagePicker camera path that requires legacy external-storage permission.
