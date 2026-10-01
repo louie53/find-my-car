@@ -6,7 +6,7 @@ An Android parking reminder with two main screens: save your parking clues, then
 
 <img src="assets/icon/icon.png" alt="Find My Car app icon: a white car and location marker on green" width="128" height="128" />
 
-**Status: v0.1.0 APK published; v0.1.1 icon update is being prepared.** Source and controlled-logic review passed, and the published APK's embedded configuration and merged Android permissions were inspected. The owner reported a successful Android Expo Go trial, but the tested revision and operation coverage were not recorded. Standalone physical-device acceptance remains pending. Android 10 (API 29) or newer is required.
+**Status: v0.1.1 APK published with a custom Android icon.** Source checks and independent source review passed; the final APK configuration, permissions and icon resources were inspected. The owner reported normal use of the v0.1.0 standalone APK. The v0.1.1 launcher and phone behaviour still need confirmation. Android 10 (API 29) or newer is required.
 
 ## What you can do
 
@@ -23,9 +23,9 @@ A fresh installation has no example record or simulated photo. GPS is approximat
 
 ## APK and trying the app
 
-[Download v0.1.0](https://github.com/louie53/find-my-car/releases/tag/v0.1.0). The release includes the Android APK, build provenance and SHA-256 checksum. It is tagged at 2bfd670 and uses EAS build c7ddbcbc-2b4f-424d-89d1-c67308c1e2d8. The APK's embedded configuration matches the later committed EAS association, and its final manifest contains none of the blocked permissions. This inspection does not establish standalone phone behaviour.
+[Download the v0.1.1 APK](https://github.com/louie53/find-my-car/releases/download/v0.1.1/find-my-car-v0.1.1-android.apk) or view [the release notes and checksum](https://github.com/louie53/find-my-car/releases/tag/v0.1.1). The release is built from cecef1e. The previous [v0.1.0 release](https://github.com/louie53/find-my-car/releases/tag/v0.1.0) remains available.
 
-The v0.1.1 candidate adds a custom green car/location icon, including Android adaptive and monochrome assets under assets/icon, and increments Android versionCode to 2. It changes no parking logic or data format. A new APK must be built and inspected before publishing v0.1.1; installing v0.1.0 will continue to show its original icon.
+v0.1.1 adds a custom green car/location icon, including Android adaptive and monochrome assets under assets/icon, and increments Android versionCode to 2. Parking logic, data format and permissions are unchanged. Install the new APK to get the icon; v0.1.0 keeps its original icon.
 
 For physical-device testing, follow [the Android device checklist](docs/ANDROID_DEVICE_CHECKS.md) and record the APK version, source commit, build ID and SHA-256 used.
 
@@ -102,7 +102,7 @@ Exact commands, exit codes, versions and reviewed baselines are recorded in [val
 
 The dependency audit reports 10 moderate findings in Expo's toolchain dependency chain, with no high or critical findings. This remains a recorded dependency issue; the audit's suggested Expo downgrade was not applied.
 
-The v0.1.0 APK passed offline ZIP, embedded-configuration and merged-manifest inspection. The v0.1.1 icon candidate still needs its own build inspection and launcher check.
+The v0.1.1 APK passed offline ZIP, embedded-configuration, merged-manifest and packaged-icon inspection. Its supported APK v2 signature and content digests passed offline verification, and its signing certificate matches v0.1.0. These checks do not establish successful installation or actual launcher rendering.
 
 Not yet independently tested on a standalone phone installation: real Android GPS/permissions, camera output/orientation, Activity destruction, filesystem persistence, offline native operation, hardware Back, keyboard/small-screen/large-font layouts and cold start without Metro/Expo Go. No screenshots are presented as Android evidence.
 
@@ -118,6 +118,6 @@ Not yet independently tested on a standalone phone installation: real Android GP
 
 The app implements a two-screen layout using native controls. External Maps opens the saved destination; the app does not implement indoor navigation.
 
-Implementation and automated tests were written with Codex assistance. Independent source/controlled-adapter review passed on 3911449, including 81 tests, 28 location scenarios and 16 additional F03 regressions. The documentation-only follow-up 2bfd670 also passed independent review. The published v0.1.0 APK has been inspected as described above; independent native/device acceptance and the v0.1.1 icon candidate's review remain pending.
+Implementation and automated tests were written with Codex assistance. Independent source/controlled-adapter review passed on 3911449, including 81 tests, 28 location scenarios and 16 additional F03 regressions. The documentation-only follow-up 2bfd670 and the v0.1.1 icon source cecef1e also passed independent source review. The published APK inspections are described above; independent native/device acceptance remains pending.
 
 API references: [Expo Location](https://docs.expo.dev/versions/v57.0.0/sdk/location/), [ImagePicker](https://docs.expo.dev/versions/v57.0.0/sdk/imagepicker/), [FileSystem](https://docs.expo.dev/versions/v57.0.0/sdk/filesystem/), [APK builds](https://docs.expo.dev/build-reference/apk/). The Android 10 minimum avoids the older ImagePicker camera path that requires legacy external-storage permission.
