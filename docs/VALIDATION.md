@@ -15,6 +15,10 @@ The precise candidate commit and local evidence paths are in the coordinating de
 | Android Hermes export after indoor-clue guidance | PASS, exit 0: EXPO_NO_TELEMETRY=1 EXPO_OFFLINE=1 CI=1 npm run export:android; 636 modules | artifacts/export-indoor.log |
 | F01 actual Alert calls through installed RN | PASS, exit 0: TSX_DISABLE_CACHE=1 node --import tsx artifacts/verify-f01-alerts.cjs; 3 call sites / 5 new-edit cases | artifacts/verify-f01-indoor.log |
 | Actual TSX photo/shortcut JS probe | PASS, exit 0: node artifacts/verify-indoor-ui.cjs; 12 hook/element-stub scenarios, no native renderer | artifacts/verify-indoor-ui.log |
+| Permission-handling candidate: typecheck / lint / 81 tests | PASS, exit 0: TSX_DISABLE_CACHE=1 npm run check; 81 passed, 0 failed/skipped | artifacts/check-location-permission.log |
+| Permission-handling Android Hermes export | PASS, exit 0: EXPO_NO_TELEMETRY=1 EXPO_OFFLINE=1 CI=1 npm run export:android; 637 modules | artifacts/export-location-permission.log |
+| Retained F01 and indoor probes after permission changes | PASS, exit 0: five confirmation cases and twelve JS UI cases | artifacts/verify-f01-location-permission.log; artifacts/verify-indoor-ui-location-permission.log |
+| Actual native-adapter/LocationPanel JS extraction | PASS, exit 0: node artifacts/verify-location-permission.cjs; 20 controlled Expo mock/JSX scenarios, no native calls | artifacts/verify-location-permission.log |
 | Native generation | PASS, exit 0: npx expo prebuild --platform android --no-install --clean | artifacts/prebuild.log |
 | Generated Android manifest/minimum SDK | PASS, exit 0: npm run check:android-config | artifacts/android-config.log |
 | Expo compatible dependencies | PASS, exit 0: npx expo install --check (online) reports Dependencies are up to date | artifacts/expo-install-check.log |
@@ -32,7 +36,7 @@ The final checks include the camera recovery fix and two added regression tests.
 
 The npm audit findings propagate from uuid through xcode and the Expo configuration toolchain. The underlying advisory concerns the uuid v3/v5/v6 buffer argument; this app generates IDs with expo-crypto. The suggested automatic remedy includes downgrading Expo to 46.0.21, which would break the selected SDK combination, so no force-fix was applied. This is not a claim that the dependency issue is resolved. See [the reported advisory](https://github.com/advisories/GHSA-w5hq-g745-h8pq).
 
-The current exported bundle is dist/_expo/static/js/android/index-6e409e704fbefa5bdf7f666ab0c4a43a.hbc (1.6 MB). Generated files and evidence logs are ignored and are not part of the source upload. Java 25.0.2 was detected but has not been used for an Android compile; local SDK/JDK compatibility remains unverified.
+The current exported bundle is dist/_expo/static/js/android/index-09d379d362c8a4658a091ae9a61d3aaf.hbc (1.6 MB). Generated files and evidence logs are ignored and are not part of the source upload. Java 25.0.2 was detected but has not been used for an Android compile; local SDK/JDK compatibility remains unverified.
 
 ## AR-v2 F01 repair
 
@@ -69,6 +73,20 @@ The form now suggests a level or sign photo above Save when a valid position exi
 Photo usability requires a current URI, successful file-existence check and successful Image load. Missing/check-failed/decode-failed photos retain their references and error UI and do not suppress the reminder or add an unavailable-photo comparison step. Unmount guards and sticky decode failure cover late async events. The 18 new tests cover guidance predicates, null/0/5 accuracy, whitespace, clue add/remove, photo failures, Maps fallback, location-only persistence, edit cancellation, old-record isolation and Found/Undo across restarts. The 12-case actual-TSX probe covers photo-event order, read errors, unmount, stable callbacks, URI identity, retained-photo shape and shortcut/busy actions. These are synthetic JavaScript checks, not native image or pixel tests.
 
 The simulator and old local server were stopped at the start of this session. A new localhost-only Metro server first bound IPv6 while its manifest advertised 127.0.0.1, causing Expo Go launch errors. Restarting with node --dns-result-order=ipv4first corrected the connection; iOS bundled and the actual empty app screen loaded. Screenshots and local connection notes are retained under artifacts/indoor/. No app data was cleared, record written, permission expanded or sample record added to production source. GPS-only reminder screens, keyboard/focus movement, camera flow, maximum fonts and Android rendering remain pending UI/device verification. The source and checks are complete for independent targeted review.
+
+## iPhone 17 Pro Max permission/location trial
+
+The user supplied a screenshot showing Location unavailable / Location is unavailable here after reporting that they allowed permission. That exact message came from getCurrentPositionAsync rejection after the prior adapter's permission/services checks; it differs from the controller's timeout message. It is evidence of that failure branch, not a current permission query or the original native error. The new simulator's initial location source was not directly readable, so absence of a simulated position is a hypothesis, not a confirmed root cause.
+
+Both the previous iPhone 17 (iOS 26.4) and new iPhone 17 Pro Max (iOS 26.3) were booted. The existing localhost Metro was running and was not duplicated. Device Hub was running, but its CUA accessibility retrieval timed out; no alternate UI injection was used. A direct Pro Max SDK screenshot showed the empty state with an Undo entry. No records were saved, removed, restored or cleared during this diagnostic.
+
+Using Apple's simctl location API, the developer set the Pro Max simulator to explicitly synthetic latitude/longitude 0,0. The command succeeded without changing permissions or app storage. The user was asked to retry; no successful Pro Max positioning result has yet been recorded. [Expo's simulator instructions](https://docs.expo.dev/versions/v57.0.0/sdk/location/#ios-simulator) require a simulated location option other than None. Test coordinates do not prove actual GPS, parking accuracy or an Android fix.
+
+Source fixes: permission preflight completes before the 15-second GPS/services deadline; request generations/draft IDs are checked before starting GPS after a late permission response. The permission phase has no timer, while manual save/cancel remain available and invalidate it. If the native permission Promise never returns, the progress panel can remain loading; no permanent transaction lock is held. Native locate reads permission without a second prompt, classifies permission/services/unavailable/invalid failures and retains the original cause internally. App settings appears only for a classified permission failure. Invalid native shapes/timestamps produce ordinary invalid-location guidance, rather than a raw TypeError/RangeError. Missing positions are never replaced by fake or last-known coordinates.
+
+The new 14 tests cover permission waiting beyond the GPS deadline, rejection/retry, manual save/cancel and cross-draft late grants, existing coordinates and edit isolation. The 20-case probe extracts the actual adapter and LocationPanel with controlled Expo mocks. Its first run found two malformed-position classification gaps; those were repaired and the root reran all twenty successfully. Probe assertions are JavaScript behaviour, not native permission/GPS/UI acceptance. The full 81 tests, export and retained F01/indoor probes passed. Repository/schema/dependencies/permissions and indoor/button handlers remain unchanged.
+
+The user also reported a trouble-free Android phone trial and confirmed Expo Go. Individual operations and exact tested revision were not provided. It is recorded as user feedback, not a complete phone checklist or independent APK pass. The fixed source candidate and current local runtime correspondence are recorded in DEVELOPMENT_STATUS.md and artifacts/validation-run.json; current candidate revalidation is pending.
 
 ## Coverage boundaries
 

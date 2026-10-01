@@ -91,7 +91,7 @@ function LocationPanel({ view, controller }: { view: ViewState; controller: Park
       {location?.accuracy != null ? <Text style={styles.small}>Reported accuracy: about {Math.round(location.accuracy)} m. This does not identify a level.</Text> : null}
       {!preserved && view.locationStatus !== 'loading' ? <View style={styles.inlineActions}>
         <Button kind="link" label={requestLabel} disabled={view.busy} onPress={() => { void controller.requestLocation(); }} />
-        {view.locationStatus === 'unavailable' ? <Button kind="link" label="App settings" disabled={view.busy} onPress={() => { void controller.openSettings(); }} /> : null}
+        {unavailable && view.locationSettingsRequired ? <Button kind="link" label="App settings" disabled={view.busy} onPress={() => { void controller.openSettings(); }} /> : null}
       </View> : null}
     </View>
   </View>;

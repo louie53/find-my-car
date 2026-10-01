@@ -2,6 +2,8 @@
 
 Updated: 2026-10-01, Pacific/Auckland. Button styling is implemented. The user approved the indoor-clue guidance and requested independent acceptance; it is now implemented in this candidate.
 
+This document describes the button/indoor-guidance change independently reviewed on a9c77b7. Later permission timing and failure guidance changes are recorded in [validation notes](VALIDATION.md); historical statements about unchanged native/controller code below refer to the indoor-guidance change.
+
 ## Implemented button hierarchy
 
 The approved emerald-pill preview was applied to the existing React Native controls, without copying its example data or simplified handlers.

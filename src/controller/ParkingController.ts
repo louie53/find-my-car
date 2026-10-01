@@ -1,7 +1,9 @@
 import { ParkingRepository, type CameraResult } from '../data/ParkingRepository';
 import { type Draft, type ParkingLocation, type ParkingState } from '../domain/parking';
+import { LocationError } from '../domain/location';
 
 export interface DeviceServices {
+  requestLocationPermission?(): Promise<void>;
   locate(): Promise<ParkingLocation>;
   requestCameraPermission(): Promise<boolean>;
   takePhoto(): Promise<CameraResult>;
@@ -20,6 +22,7 @@ export type ViewState = {
   warnings: readonly string[];
   locationStatus: 'idle' | 'loading' | 'available' | 'unavailable' | 'preserved';
   locationMessage: string;
+  locationSettingsRequired: boolean;
 };
 
 const errorMessage = (error: unknown, fallback: string): string =>
@@ -29,7 +32,7 @@ const errorMessage = (error: unknown, fallback: string): string =>
 export class ParkingController {
   private view: ViewState = {
     phase: 'loading', state: null, draft: null, busy: false, error: null, notice: null,
-    warnings: [], locationStatus: 'idle', locationMessage: '',
+    warnings: [], locationStatus: 'idle', locationMessage: '', locationSettingsRequired: false,
   };
   private listeners = new Set<() => void>();
   private locationEpoch = 0;
@@ -47,7 +50,9 @@ export class ParkingController {
   private publish(patch: Partial<ViewState> = {}): void {
     this.view = { ...this.view, ...patch };
     if (this.view.phase === 'ready') {
-      this.view = { ...this.view, state: this.repo.getState(), draft: this.repo.getDraft(), warnings: [...this.repo.getWarnings()] };
+      const draft = this.repo.getDraft();
+      this.view = { ...this.view, state: this.repo.getState(), draft, warnings: [...this.repo.getWarnings()],
+        locationSettingsRequired: draft ? this.view.locationSettingsRequired : false };
     }
     for (const listener of this.listeners) listener();
   }
@@ -89,7 +94,7 @@ export class ParkingController {
     this.publish({ phase: 'ready', busy: false, error: recoveryError,
       notice: draft ? 'Your parking draft was recovered.' : null,
       locationStatus: draft?.mode === 'edit' ? 'preserved' : draft?.location ? 'available' : 'idle',
-      locationMessage: '' });
+      locationMessage: '', locationSettingsRequired: false });
   }
 
   begin(mode: 'new' | 'edit'): void {
@@ -98,7 +103,7 @@ export class ParkingController {
     try {
       this.repo.beginDraft(mode);
       this.publish({ error: null, notice: null,
-        locationStatus: mode === 'edit' ? 'preserved' : 'idle', locationMessage: '' });
+        locationStatus: mode === 'edit' ? 'preserved' : 'idle', locationMessage: '', locationSettingsRequired: false });
       if (mode === 'new') void this.requestLocation();
     } catch (error) {
       this.publish({ error: errorMessage(error, 'The draft could not be opened.') });
@@ -128,19 +133,27 @@ export class ParkingController {
     this.invalidateLocation();
     const epoch = this.locationEpoch;
     const draftId = draft.id;
-    this.publish({ locationStatus: 'loading', locationMessage: 'Getting your parking location…', error: null });
-    // A deadline covers permission/services/GPS together. Old native work may continue but is ignored.
-    const timeout = new Promise<ParkingLocation>((_, reject) => {
-      this.locationTimer = setTimeout(() => reject(new Error('Location took too long. You can save your clues and try again.')), this.locationTimeoutMs);
-    });
+    this.publish({ locationStatus: 'loading', locationMessage: this.devices.requestLocationPermission
+      ? 'Waiting for location permission. You can still save clues.' : 'Getting your parking location…',
+    locationSettingsRequired: false, error: null });
     try {
+      if (this.devices.requestLocationPermission) {
+        await this.devices.requestLocationPermission();
+        if (epoch !== this.locationEpoch || this.repo.getDraft()?.id !== draftId) return;
+        this.publish({ locationMessage: 'Getting your parking location…' });
+      }
+      // Permission decisions have no GPS deadline. Save/cancel still invalidate pending native work.
+      const timeout = new Promise<ParkingLocation>((_, reject) => {
+        this.locationTimer = setTimeout(() => reject(new Error('Location took too long. You can save your clues and try again.')), this.locationTimeoutMs);
+      });
       const location = await Promise.race([this.devices.locate(), timeout]);
       if (epoch !== this.locationEpoch || this.repo.getDraft()?.id !== draftId) return;
       this.repo.setNewLocation(location);
-      this.publish({ locationStatus: 'available', locationMessage: 'GPS may be less accurate indoors.' });
+      this.publish({ locationStatus: 'available', locationMessage: 'GPS may be less accurate indoors.', locationSettingsRequired: false });
     } catch (error) {
       if (epoch !== this.locationEpoch || this.repo.getDraft()?.id !== draftId) return;
-      this.publish({ locationStatus: 'unavailable', locationMessage: errorMessage(error, 'Location is unavailable. You can still save clues.') });
+      this.publish({ locationStatus: 'unavailable', locationMessage: errorMessage(error, 'Location is unavailable. You can still save clues.'),
+        locationSettingsRequired: error instanceof LocationError && error.settingsRequired });
     } finally {
       if (epoch === this.locationEpoch && this.locationTimer) {
         clearTimeout(this.locationTimer);
@@ -153,7 +166,7 @@ export class ParkingController {
     this.invalidateLocation();
     if (this.view.locationStatus === 'loading') {
       this.publish({ locationStatus: this.repo.getDraft()?.location ? 'available' : 'unavailable',
-        locationMessage: 'You can save your parking clues without GPS.' });
+        locationMessage: 'You can save your parking clues without GPS.', locationSettingsRequired: false });
     }
   }
 

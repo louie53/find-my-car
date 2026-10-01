@@ -2,7 +2,7 @@
 
 An Android parking reminder with two main screens: save your parking clues, then use them to find your car. Built with React Native, Expo and TypeScript.
 
-**Status: source review candidate. No APK or Android device acceptance is available yet.** The native integrations are implemented; the checks below do not replace physical-device testing. Android 10 (API 29) or newer is required.
+**Status: source review candidate. No APK or complete Android device acceptance is available yet.** An Android Expo Go trial has user-reported success, with coverage still to be confirmed. The checks below do not replace complete physical-device testing. Android 10 (API 29) or newer is required.
 
 ## What you can do
 
@@ -73,7 +73,9 @@ The app writes one versioned AsyncStorage object containing an active record, an
 
 Photos are copied before writing their metadata. Saved/ended/restored UI state changes only after storage succeeds, and obsolete photos are removed afterwards. A failed write keeps the prior record and the current draft. Cleanup failures are reported separately from successful saving.
 
-Location requests have a 15-second UI deadline and a generation ID. Saving, leaving, retrying or opening the camera invalidates previous work. An old result cannot replace a new draft or the parking coordinates. Editing never requests a replacement position.
+The native location adapter requests foreground permission before starting the 15-second position deadline. Waiting for a permission decision still allows manual clues, saving and cancellation. Saving, leaving, retrying or opening the camera invalidates previous work. An old result cannot replace a new draft or the parking coordinates. Editing never requests permission or a replacement position. App settings is suggested for denied permission; an authorised request without a position offers retry and manual saving.
+
+For iOS Simulator trials, configure a simulated position for the selected device ([Expo instructions](https://docs.expo.dev/versions/v57.0.0/sdk/location/#ios-simulator)). Permission alone does not supply location data. Simulator positions are test data, not evidence of real GPS accuracy.
 
 Before launching the camera, the app persists the text/photo draft and a request marker. A completed copy uses a filename tied to that request, after copying to a temporary file and renaming it. Startup recovers this completed file first, or consumes ImagePicker's pending result if no completed file exists. This keeps a copied photo recoverable when its metadata write fails and the app restarts again. This implementation has logic tests; Android Activity destruction still needs device validation.
 
@@ -86,7 +88,7 @@ Android backup and over-the-air updates are disabled in configuration. Uninstall
 Locally exercised checks:
 
 - TypeScript strict checking and ESLint.
-- 67 isolated logic/fault tests covering late location, timeout, camera checkpoint/recovery across repeated restarts, edits/cancellation, replacement, Found/Undo after repository restart, failed copies/writes, cleanup and indoor-clue guidance/availability.
+- 81 isolated logic/fault tests covering permission waiting/retries/classification, late location, timeout, camera checkpoint/recovery across repeated restarts, edits/cancellation, replacement, Found/Undo after repository restart, failed copies/writes, cleanup and indoor-clue guidance/availability.
 - Android Hermes bundle export.
 - Expo native prebuild and generated Android configuration inspection.
 - A clean dependency installation and Expo dependency compatibility check.
@@ -108,6 +110,6 @@ Not yet tested: real Android GPS/permissions, camera output/orientation, Activit
 
 The [v4 design reference](https://www.figma.com/design/eujnRpaXlRhNVJb4X8habe?node-id=5-2) supplied the two-screen layout. The app uses native controls and its own implementation. Design-file access has not been changed. External Maps replaces the design's schematic area preview.
 
-Implementation and automated tests were written with Codex (GPT-6.1 Sol) assistance. Independent acceptance and Louie's physical-device review are pending; neither is claimed as completed.
+Implementation and automated tests were written with Codex (GPT-6.1 Sol) assistance. Prior fixed candidates received targeted independent source/logic review. The new permission-handling candidate needs its own review; final native/device and standalone APK acceptance remain pending.
 
 API references: [Expo Location](https://docs.expo.dev/versions/v57.0.0/sdk/location/), [ImagePicker](https://docs.expo.dev/versions/v57.0.0/sdk/imagepicker/), [FileSystem](https://docs.expo.dev/versions/v57.0.0/sdk/filesystem/), [APK builds](https://docs.expo.dev/build-reference/apk/). The Android 10 minimum avoids the older ImagePicker camera path that requires legacy external-storage permission.

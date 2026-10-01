@@ -6,7 +6,8 @@ import * as Location from 'expo-location';
 import { Linking, Platform } from 'react-native';
 import { ParkingController, type DeviceServices } from '../controller/ParkingController';
 import { ParkingRepository, type CameraResult, type PhotoStore } from '../data/ParkingRepository';
-import { isLocation, isPhotoName, mapsURLs } from '../domain/parking';
+import { isLocation, isPhotoName, mapsURLs, type ParkingLocation } from '../domain/parking';
+import { LocationError } from '../domain/location';
 
 const directory = () => new Directory(Paths.document, 'parking-photos');
 function photoFile(filename: string): File {
@@ -56,21 +57,39 @@ function cameraResult(result: ImagePicker.ImagePickerResult | ImagePicker.ImageP
 }
 
 export const nativeDevices: DeviceServices = {
-  async locate() {
+  async requestLocationPermission() {
     const permission = await Location.requestForegroundPermissionsAsync();
-    if (!permission.granted) throw new Error('Location permission was not granted. Add a clue, or enable location in App settings.');
-    if (!await Location.hasServicesEnabledAsync()) throw new Error('Location is switched off. You can still save your parking clues.');
+    if (!permission.granted) throw new LocationError('permission', 'Location permission was not granted. Add a clue, or enable location in App settings.');
+  },
+  async locate() {
+    const permission = await Location.getForegroundPermissionsAsync();
+    if (!permission.granted) throw new LocationError('permission', 'Location permission was not granted. Add a clue, or enable location in App settings.');
+    if (!await Location.hasServicesEnabledAsync()) throw new LocationError('services', 'Location Services are switched off. Turn them on in your phone settings, or save your parking clues.');
     let position: Location.LocationObject;
     try {
       position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced, mayShowUserSettingsDialog: false });
-    } catch {
-      throw new Error('Location is unavailable here. You can still save clues or try again.');
+    } catch (error) {
+      const currentPermission = await Location.getForegroundPermissionsAsync().catch(() => null);
+      if (currentPermission && !currentPermission.granted) {
+        throw new LocationError('permission', 'Location permission was not granted. Add a clue, or enable location in App settings.', error);
+      }
+      const servicesEnabled = await Location.hasServicesEnabledAsync().catch(() => null);
+      if (servicesEnabled === false) {
+        throw new LocationError('services', 'Location Services are switched off. Turn them on in your phone settings, or save your parking clues.', error);
+      }
+      throw new LocationError('unavailable', 'A location could not be obtained. You can still save clues or try again.', error);
     }
-    const location = {
-      latitude: position.coords.latitude, longitude: position.coords.longitude,
-      accuracy: position.coords.accuracy, capturedAt: new Date(position.timestamp).toISOString(),
-    };
-    if (!isLocation(location)) throw new Error('A valid location could not be obtained. Save your clues or try again.');
+    let location: ParkingLocation;
+    try {
+      if (typeof position?.timestamp !== 'number') throw new Error('Invalid native location timestamp.');
+      location = {
+        latitude: position.coords.latitude, longitude: position.coords.longitude,
+        accuracy: position.coords.accuracy, capturedAt: new Date(position.timestamp).toISOString(),
+      };
+    } catch (error) {
+      throw new LocationError('invalid', 'A valid location could not be obtained. Save your clues or try again.', error);
+    }
+    if (!isLocation(location)) throw new LocationError('invalid', 'A valid location could not be obtained. Save your clues or try again.');
     return location;
   },
   async requestCameraPermission() {
