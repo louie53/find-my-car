@@ -19,14 +19,18 @@ The precise candidate commit and local evidence paths are in the coordinating de
 | Permission-handling Android Hermes export | PASS, exit 0: EXPO_NO_TELEMETRY=1 EXPO_OFFLINE=1 CI=1 npm run export:android; 637 modules | artifacts/export-location-permission.log |
 | Retained F01 and indoor probes after permission changes | PASS, exit 0: five confirmation cases and twelve JS UI cases | artifacts/verify-f01-location-permission.log; artifacts/verify-indoor-ui-location-permission.log |
 | Actual native-adapter/LocationPanel JS extraction | PASS, exit 0: node artifacts/verify-location-permission.cjs; 20 controlled Expo mock/JSX scenarios, no native calls | artifacts/verify-location-permission.log |
+| F03 services-off repair: typecheck / lint / 81 tests | PASS, exit 0: TSX_DISABLE_CACHE=1 npm run check; 81 passed, 0 failed/skipped | artifacts/check-f03.log |
+| F03 Android Hermes export | PASS, exit 0: EXPO_NO_TELEMETRY=1 EXPO_OFFLINE=1 CI=1 npm run export:android; 637 modules | artifacts/export-f03.log |
+| F03 actual native-adapter/LocationPanel JS extraction | PASS, exit 0: node artifacts/verify-location-permission.cjs; 28 controlled scenarios including three services-off paths, failed queries and recovery | artifacts/verify-location-f03.log |
 | Native generation | PASS, exit 0: npx expo prebuild --platform android --no-install --clean | artifacts/prebuild.log |
 | Generated Android manifest/minimum SDK | PASS, exit 0: npm run check:android-config | artifacts/android-config.log |
 | Expo compatible dependencies | PASS, exit 0: npx expo install --check (online) reports Dependencies are up to date | artifacts/expo-install-check.log |
 | Dependency audit | Exit 1: 10 moderate findings, 0 high/critical; unresolved | artifacts/npm-audit.json |
-| EAS account probe | Exit 1: Not logged in | development tool output; no credentials printed |
-| EAS cloud build | Did not execute: automatic approval rejected source upload | development status |
+| Historical developer EAS account probe | Exit 1: Not logged in at that time; not a current account check | development tool output; no credentials printed |
+| Historical developer EAS cloud build attempt | Did not execute: automatic approval rejected that source upload | development status |
+| User EAS build 84e530bc | User-provided output reports Build finished and app download; later emulator installation failed with spawn adb ENOENT. Exact source/configuration and F03 inclusion unverified | AR-v6 section 6 and review-build-84e530bc evidence |
 | Android SDK/adb | Not available in PATH or usual paths checked | development status |
-| APK / Android physical device | BLOCKED / NOT TESTED | No package or device evidence |
+| Final APK / independent Android physical-device acceptance | NOT TESTED; user Android Expo Go trial reported normal, operations/revision unspecified | No reviewed APK hash, source correspondence or independent device checklist |
 
 The first typecheck failed because Node types were not in the TypeScript type list; this was fixed. The first lint failed on effect-driven photo-state reset; keyed photo components fixed it. An ESLint 10 compatibility trial failed in Expo's React plugin; the project returned to Expo-compatible ESLint 9.39.5. Failed checks are retained in local logs; they are not counted as passes.
 
@@ -36,7 +40,7 @@ The final checks include the camera recovery fix and two added regression tests.
 
 The npm audit findings propagate from uuid through xcode and the Expo configuration toolchain. The underlying advisory concerns the uuid v3/v5/v6 buffer argument; this app generates IDs with expo-crypto. The suggested automatic remedy includes downgrading Expo to 46.0.21, which would break the selected SDK combination, so no force-fix was applied. This is not a claim that the dependency issue is resolved. See [the reported advisory](https://github.com/advisories/GHSA-w5hq-g745-h8pq).
 
-The current exported bundle is dist/_expo/static/js/android/index-09d379d362c8a4658a091ae9a61d3aaf.hbc (1.6 MB). Generated files and evidence logs are ignored and are not part of the source upload. Java 25.0.2 was detected but has not been used for an Android compile; local SDK/JDK compatibility remains unverified.
+The current exported bundle is dist/_expo/static/js/android/index-6071eaf646df7dc98f0bfb5121c435f8.hbc (1.6 MB). It is a JavaScript export, not an APK; the export used the current working-tree app.json with the user's uncommitted EAS association. The committed source snapshot preserves the previously committed configuration separately. Generated files and evidence logs are ignored and are not part of the source upload. Java 25.0.2 was detected but has not been used for an Android compile; local SDK/JDK compatibility remains unverified.
 
 ## AR-v2 F01 repair
 
@@ -88,13 +92,21 @@ The new 14 tests cover permission waiting beyond the GPS deadline, rejection/ret
 
 The user also reported a trouble-free Android phone trial and confirmed Expo Go. Individual operations and exact tested revision were not provided. It is recorded as user feedback, not a complete phone checklist or independent APK pass. The fixed source candidate and current local runtime correspondence are recorded in DEVELOPMENT_STATUS.md and artifacts/validation-run.json; current candidate revalidation is pending.
 
+## AR-v6 F03 repair
+
+AR-v6 found a P2 classification defect in f14655b: iOS global Location Services being off can also return denied permission. Three adapter paths previously chose permission before checking services, incorrectly offering App settings. This independent source/controlled-JS finding does not establish the cause of the user's original Pro Max screenshot.
+
+Permission request preflight, direct locate preflight and the position-error recheck now classify a confirmed services=false as services first, with phone-settings guidance and no App settings requirement. If the service query rejects, denied permission still yields the permission fallback. A position-error classification keeps its exact native cause. No controller, repository, draft/epoch protection, coordinates or photo logic changed.
+
+The root reran typecheck, lint, all 81 tests and the Android export. The expanded real-method extraction probe passed 28 scenarios, including the three affected paths, service-query failure in each and a successful controlled coordinate after each recovery. It uses Expo mocks, not native settings or GPS. The five F01 and twelve indoor UI probes inherit their independently passing f14655b results because their controller/UI inputs are byte-identical; they were not represented as newly executed. Independent F03 revalidation of the new fixed commit is pending. The live Metro preview has not been reloaded and is not evidence that this repair has loaded.
+
 ## Coverage boundaries
 
 The tests use isolated in-memory adapters. Repository restart models persisted metadata re-reading, not Android process lifecycle or a real filesystem. Native integration, cache-photo copying and Activity recovery still need physical-device evidence.
 
 The generated Android manifest includes removal directives for blocked permissions. This is build input inspection, not inspection of the final merged APK. The minimum SDK is 29 because the locked ImagePicker's pre-Android-10 camera path also requires legacy storage permission, which this app does not request.
 
-The automatic approval review rejected the attempted EAS build because it can send source to an external service and judged the current authorisation insufficient. No build was dispatched and no data uploaded. The reviewed isolated source needs explicit upload approval and owner-managed Expo login before that step.
+The earlier developer EAS attempt was rejected by automatic approval review for insufficient source-upload authorisation; that attempt dispatched no build or upload. AR-v6 later recorded the user's successful cloud build output for 84e530bc-0e0e-43ba-a2da-3f4bed01c5f4. The later build is separate evidence and has not been bound to this F03 candidate or independently installed. The developer did not perform another cloud build, upload or account probe during this repair.
 
 ## Independent re-run
 

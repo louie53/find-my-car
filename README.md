@@ -19,7 +19,7 @@ A fresh installation has no example record or simulated photo. GPS is approximat
 
 ## APK and trying the app
 
-There is currently no release download. APK construction is blocked by EAS authentication and approval for sending the reviewed app source to the build service. No cloud build or standalone installation has been verified.
+No release APK or standalone installation has been verified in this development evidence. EAS account/configuration and source-upload authorisation must be checked for the concrete build inputs; earlier failed login/upload probes are historical results, not a fresh check of the user's current setup.
 
 After an approved APK has been built, record its source commit, build ID and SHA-256, then follow [the Android device checklist](docs/ANDROID_DEVICE_CHECKS.md). Release publication is a separate delivery step.
 

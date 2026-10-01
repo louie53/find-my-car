@@ -59,23 +59,31 @@ function cameraResult(result: ImagePicker.ImagePickerResult | ImagePicker.ImageP
 export const nativeDevices: DeviceServices = {
   async requestLocationPermission() {
     const permission = await Location.requestForegroundPermissionsAsync();
-    if (!permission.granted) throw new LocationError('permission', 'Location permission was not granted. Add a clue, or enable location in App settings.');
+    if (!permission.granted) {
+      const servicesEnabled = await Location.hasServicesEnabledAsync().catch(() => null);
+      if (servicesEnabled === false) throw new LocationError('services', 'Location Services are switched off. Turn them on in your phone settings, or save your parking clues.');
+      throw new LocationError('permission', 'Location permission was not granted. Add a clue, or enable location in App settings.');
+    }
   },
   async locate() {
     const permission = await Location.getForegroundPermissionsAsync();
-    if (!permission.granted) throw new LocationError('permission', 'Location permission was not granted. Add a clue, or enable location in App settings.');
+    if (!permission.granted) {
+      const servicesEnabled = await Location.hasServicesEnabledAsync().catch(() => null);
+      if (servicesEnabled === false) throw new LocationError('services', 'Location Services are switched off. Turn them on in your phone settings, or save your parking clues.');
+      throw new LocationError('permission', 'Location permission was not granted. Add a clue, or enable location in App settings.');
+    }
     if (!await Location.hasServicesEnabledAsync()) throw new LocationError('services', 'Location Services are switched off. Turn them on in your phone settings, or save your parking clues.');
     let position: Location.LocationObject;
     try {
       position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced, mayShowUserSettingsDialog: false });
     } catch (error) {
       const currentPermission = await Location.getForegroundPermissionsAsync().catch(() => null);
-      if (currentPermission && !currentPermission.granted) {
-        throw new LocationError('permission', 'Location permission was not granted. Add a clue, or enable location in App settings.', error);
-      }
       const servicesEnabled = await Location.hasServicesEnabledAsync().catch(() => null);
       if (servicesEnabled === false) {
         throw new LocationError('services', 'Location Services are switched off. Turn them on in your phone settings, or save your parking clues.', error);
+      }
+      if (currentPermission && !currentPermission.granted) {
+        throw new LocationError('permission', 'Location permission was not granted. Add a clue, or enable location in App settings.', error);
       }
       throw new LocationError('unavailable', 'A location could not be obtained. You can still save clues or try again.', error);
     }
