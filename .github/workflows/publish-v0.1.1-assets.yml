@@ -1,0 +1,75 @@
+name: Prepare verified v0.1.1 APK release draft
+
+on:
+  push:
+    branches: [release-v0.1.1-assets]
+    paths: [.github/workflows/publish-v0.1.1-assets.yml]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-find-my-car-v0.1.1-assets
+  cancel-in-progress: false
+
+jobs:
+  upload:
+    if: github.repository == 'louie53/find-my-car'
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: louie53/find-my-car
+      APK_SHA256: cfd930894191fed15cbb9e5098859eedbceca817075a15705e08331bcc1f7cdc
+      APK_BYTES: '84678926'
+      APK_NAME: find-my-car-v0.1.1-android.apk
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Download and verify the completed icon build
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          curl --fail --location --silent --show-error --max-time 90 \
+            'https://expo.dev/artifacts/eas/1AOt9lmErJ0_KZ7LT_GldwplBfIUlN7k_nnd6F9ThRQ.apk' --output "$APK_NAME"
+          printf '%s  %s\n' "$APK_SHA256" "$APK_NAME" > SHA256SUMS.txt
+          sha256sum --check SHA256SUMS.txt
+          test "$(stat --format=%s "$APK_NAME")" = "$APK_BYTES"
+          unzip -tqq "$APK_NAME"
+      - name: Prepare draft and upload APK without publishing
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release create v0.1.1 --draft --verify-tag \
+            --title 'Find My Car v0.1.1 — App icon' \
+            --notes-file .github/release-notes-v0.1.1.md
+          cd "$RUNNER_TEMP"
+          gh release upload v0.1.1 "$APK_NAME" SHA256SUMS.txt
+          gh release view v0.1.1 --json databaseId,isDraft,name,body > draft.json
+          RELEASE_ID="$(python3 - <<'PY'
+          import json
+          release = json.load(open('draft.json'))
+          assert release['isDraft'] is True
+          assert release['name'] == 'Find My Car v0.1.1 — App icon'
+          assert 'c1148c94-aeb3-4138-944d-bf96feafd875' in release['body']
+          assert isinstance(release['databaseId'], int)
+          print(release['databaseId'])
+          PY
+          )"
+          gh api "repos/louie53/find-my-car/releases/$RELEASE_ID" > release.json
+          python3 - <<'PY'
+          import json, os
+          release = json.load(open('release.json'))
+          assert release['draft'] is True
+          assets = {a['name']: a for a in release['assets']}
+          apk = assets[os.environ['APK_NAME']]
+          assert apk['size'] == int(os.environ['APK_BYTES'])
+          assert apk['state'] == 'uploaded'
+          assert apk['digest'] == 'sha256:' + os.environ['APK_SHA256']
+          assert assets['SHA256SUMS.txt']['state'] == 'uploaded'
+          print('Draft APK digest and size match; publication remains a separate step.')
+          PY
