@@ -16,7 +16,7 @@ All entries below are **NOT TESTED** until evidence is recorded.
 | Real camera | Deny, cancel, photograph a harmless sign, retake, remove and enlarge. Check portrait/landscape photos are readable. |
 | Photo persistence | Save a real photo, force-stop, reopen and enlarge. It still loads from app storage. |
 | Edit/cancel | Change text and photo, then discard. Original text, photo, coordinates and parking time remain. Confirm an edit and check only the intended clues change. |
-| New/replace | From details choose Save a new parking spot. Cancel the replacement confirmation, then confirm it. Cancellation keeps the previous record; success shows only the new one. |
+| New/replace | From details choose New parking. Cancel the replacement confirmation, then confirm it. Cancellation keeps the previous record; success shows only the new one. |
 | Found/Undo | Found → force-stop → reopen → Undo → reopen. The same record and photo return. A cancelled new draft keeps Undo; a successfully saved new record clears it. |
 | Activity destruction | Enable Don't keep activities temporarily. For both new and editing drafts, enter identifiable test text, open the camera and complete/cancel. Confirm the draft and returned photo recover once, and the original record is safe. Restore the setting afterwards. |
 | Offline | Disable mobile data/Wi-Fi, then save/read/edit text and photos, Found, Undo and restart. Local functions work. Do not assume GPS necessarily fails without internet. |
