@@ -4,7 +4,7 @@ Date: 2026-10-01, Pacific/Auckland. This file records development checks, not in
 
 ## Source candidate
 
-The precise candidate commit and local evidence paths are in the coordinating development status. After committing, the ignored artifacts/review-manifest.json contains SHA-256 values for every tracked file and the exact Git revision. No APK hash or build ID exists yet.
+The precise candidate commit and local evidence paths are in the coordinating development status. After committing, the ignored artifacts/review-manifest.json contains SHA-256 values for every tracked file and the exact Git revision. No APK hash/build ID has been verified as corresponding to the current candidate; the earlier user-reported cloud build is recorded below.
 
 ## Actual checks
 
@@ -90,7 +90,7 @@ Source fixes: permission preflight completes before the 15-second GPS/services d
 
 The new 14 tests cover permission waiting beyond the GPS deadline, rejection/retry, manual save/cancel and cross-draft late grants, existing coordinates and edit isolation. The 20-case probe extracts the actual adapter and LocationPanel with controlled Expo mocks. Its first run found two malformed-position classification gaps; those were repaired and the root reran all twenty successfully. Probe assertions are JavaScript behaviour, not native permission/GPS/UI acceptance. The full 81 tests, export and retained F01/indoor probes passed. Repository/schema/dependencies/permissions and indoor/button handlers remain unchanged.
 
-The user also reported a trouble-free Android phone trial and confirmed Expo Go. Individual operations and exact tested revision were not provided. It is recorded as user feedback, not a complete phone checklist or independent APK pass. The fixed source candidate and current local runtime correspondence are recorded in DEVELOPMENT_STATUS.md and artifacts/validation-run.json; current candidate revalidation is pending.
+The user also reported a trouble-free Android phone trial and confirmed Expo Go. Individual operations and exact tested revision were not provided. It is recorded as user feedback, not a complete phone checklist or independent APK pass. The fixed source candidate and current local runtime correspondence are recorded in DEVELOPMENT_STATUS.md and artifacts/validation-run.json; AR-v7 records the completed source-level F03 revalidation on 3911449.
 
 ## AR-v6 F03 repair
 
@@ -98,7 +98,7 @@ AR-v6 found a P2 classification defect in f14655b: iOS global Location Services 
 
 Permission request preflight, direct locate preflight and the position-error recheck now classify a confirmed services=false as services first, with phone-settings guidance and no App settings requirement. If the service query rejects, denied permission still yields the permission fallback. A position-error classification keeps its exact native cause. No controller, repository, draft/epoch protection, coordinates or photo logic changed.
 
-The root reran typecheck, lint, all 81 tests and the Android export. The expanded real-method extraction probe passed 28 scenarios, including the three affected paths, service-query failure in each and a successful controlled coordinate after each recovery. It uses Expo mocks, not native settings or GPS. The five F01 and twelve indoor UI probes inherit their independently passing f14655b results because their controller/UI inputs are byte-identical; they were not represented as newly executed. Independent F03 revalidation of the new fixed commit is pending. The live Metro preview has not been reloaded and is not evidence that this repair has loaded.
+The root reran typecheck, lint, all 81 tests and the Android export. The expanded real-method extraction probe passed 28 scenarios, including the three affected paths, service-query failure in each and a successful controlled coordinate after each recovery. It uses Expo mocks, not native settings or GPS. The five F01 and twelve indoor UI probes inherit their independently passing f14655b results because their controller/UI inputs are byte-identical; they were not represented as newly executed. AR-v7 independently closed F03 on 3911449, with 81 tests, 28 adapter cases and 16 additional F03 regressions passing. The live Metro preview has not been reloaded and is not evidence that this repair has loaded.
 
 ## Coverage boundaries
 

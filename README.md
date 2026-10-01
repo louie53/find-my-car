@@ -2,7 +2,7 @@
 
 An Android parking reminder with two main screens: save your parking clues, then use them to find your car. Built with React Native, Expo and TypeScript.
 
-**Status: source review candidate. No APK or complete Android device acceptance is available yet.** An Android Expo Go trial has user-reported success, with coverage still to be confirmed. The checks below do not replace complete physical-device testing. Android 10 (API 29) or newer is required.
+**Status: source review candidate. A standalone APK corresponding to the current candidate and complete Android device acceptance have not been verified.** An Android Expo Go trial has user-reported success, with coverage still to be confirmed. The checks below do not replace complete physical-device testing. Android 10 (API 29) or newer is required.
 
 ## What you can do
 
